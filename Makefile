@@ -2,7 +2,7 @@
 # Include variables from separate files
 include config.mk
 GO := go
-MODULE := github.com/$(GITHUB_USERNAME)/$(REPO)/src
+MODULE := github.com/$(GITHUB_USERNAME)/$(REPO)
 SRC_DIR := src
 BUILD_DIR := build
 RELEASE_DIR := release

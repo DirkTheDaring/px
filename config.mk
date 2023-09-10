@@ -1,4 +1,4 @@
 GITHUB_USERNAME := DirkTheDaring
-REPO := px-api-client-go
+REPO := px
 #GITHUB_USERNAME := git
 #REPO := github.com:DirkTheDaring/px-api-client-go
