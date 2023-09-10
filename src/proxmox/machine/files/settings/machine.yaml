@@ -1,0 +1,8 @@
+node: ""
+type: "small"
+
+ignition:
+  enabled: false
+  vars: {}
+
+machine: {}  ## different files

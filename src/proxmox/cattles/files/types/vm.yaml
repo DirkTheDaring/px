@@ -1,0 +1,19 @@
+small:
+  setting: small.yaml
+  template: vm-cattle.gotext
+
+medium:
+  setting: medium.yaml
+  template: medium.gotext
+
+large:
+  setting: large.yaml
+  template: large.gotext
+
+windows-small:
+  setting: small.yaml
+  template: windows.gotext
+
+apple-bigsur:
+  setting: small.yaml
+  template: apple.gotext

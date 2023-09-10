@@ -1,0 +1,9 @@
+# Shouldn't that be also "node specific"? This is intentional to enforce a cross node strategy for naming stuff and usage
+STORAGE0:
+  - local-btrfs
+  - local-zfs
+  - local-lvm
+STORAGE1:
+  - local-btrfs
+  - local-zfs
+  - local-lvm

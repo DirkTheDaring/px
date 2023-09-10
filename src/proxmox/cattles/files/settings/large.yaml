@@ -1,0 +1,34 @@
+cattle: large
+memory: 16384
+cores: 4
+bios: ovmf
+
+vmid: 0
+# defaults
+storage: DEFAULT
+
+net:
+  model: virtio
+  bridge: vmbr0
+rng:
+  source: "/dev/urandom"
+
+watchdog:
+  model: i6300esb
+  action: reset
+
+onboot: true
+ostype: l26
+
+agent:
+  enabled: true
+
+scsihw: virtio-scsi-pci
+serial: socket
+
+#memory: 512 # MB
+#cores: 1
+#bios: seabios
+#display: default
+#machine:  default i440fx
+#scsihw: default LSI 53C89%A

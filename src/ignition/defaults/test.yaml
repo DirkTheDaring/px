@@ -1,0 +1,48 @@
+#template: "mytemplate.tmpl"
+
+password_hash: ""
+ssh_authorized_keys:
+  - "a"
+  - "b"
+
+http_proxy: "https://localhost:3443"
+
+services:
+  - haproxy
+  - keepalived
+
+remove_packages:
+  - "a"
+  - "b"
+packages:
+  - "c"
+  - "d"
+extra_packages:
+  - "extra1"
+  - "extra3"
+
+disks:
+- path:   /var/opt/data
+  device: /dev/vdb
+  label:  DATA
+
+hostname: myhostname
+
+net:
+  - ip: 192.168.200.1
+    macaddr: "AA:BB:CC:DD:EE:FF"
+    gw: 26
+    dns:
+      - 8.8.8.8
+
+role: "master"
+apiservers:
+  - 192.168.201.10
+  - 192.168.201.11
+
+keepalived:
+  master: true
+  virtual_router_id: 100
+  priority: 100
+  virtual_ipaddress: 192.168.203.203
+

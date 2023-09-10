@@ -1,0 +1,10 @@
+---
+nodes: {}
+name: ""
+aliases: {}
+ignition:
+  enabled: false
+  storage: ignition
+
+selectors: {}
+vars: {}

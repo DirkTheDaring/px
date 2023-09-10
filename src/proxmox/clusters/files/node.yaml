@@ -1,0 +1,9 @@
+enabled: true
+url: "https://localhost:8006/api2/json"
+username: root@pam
+password: ""
+insecureskipverify: false
+aliases: {}
+ignition: {}
+selectors: {}
+vars: {}

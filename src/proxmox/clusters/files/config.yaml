@@ -1,0 +1,28 @@
+version: "1.0.0"
+
+debug: 0
+
+aliases: {}   # this is merged with defaults of aliases
+
+ignition:     # This is the default. no merging
+  enabled: false
+
+  storage: "ignition"
+
+vars: {}
+
+selectors:
+  local:
+    FEDORA_COREOS: "^fedora-coreos-([1-9][0-9])*\\..*\\.qcow2$" # when subpatterns are there, this clusters further levels
+
+clusters:
+  - name: default
+    vars: {}
+    nodes:
+    - enabled: true
+      url: "https://localhost:8006/api2/json"
+      username: root@pam
+      password: ""
+      insecureskipverify: true
+      aliases: {}
+      vars: {}

@@ -1,0 +1,46 @@
+########################
+# Cattle {{ .cattle }}
+########################
+{{ if .vmid }}
+vmid: {{ .vmid }}
+{{ end }}
+{{ if .name }}
+name: {{ .name }}
+{{ end }}
+cores: {{ .cores }}
+
+memory: {{ .memory }}
+scsihw: {{ .scsihw }}
+virtio0:
+  import-from: {{ .px_import_from }}
+  file: {{ .px_storage0 }}:0
+  discard: on
+  size: 15G
+
+net0:
+  model:  {{ .net.model }}
+  bridge: {{ .net.bridge }}
+
+{{ if .ipconfig0 }}
+ipconfig0:
+{{ if .ipconfig0.ip }}
+  ip: {{ .ipconfig0.ip }}
+{{ end }}
+{{ if .ipconfig0.gw }}
+  gw: {{ .ipconfig0.gw }}
+{{ end }}
+{{ end }}
+{{ if .nameserver }}
+nameserver: {{ .nameserver }}
+{{ end }}
+
+bios: {{ .bios }}
+
+agent:
+  enabled: {{ .agent.enabled }}
+
+serial0: {{ .serial }}
+
+watchdog:
+  model:  {{ .watchdog.model}}
+  action: {{ .watchdog.action}}

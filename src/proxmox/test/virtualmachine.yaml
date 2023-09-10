@@ -1,0 +1,26 @@
+#balloon: 4096
+#cores: 4
+#net0:
+#  model: virtio
+#  macaddr: "56:78:33:9C:20:5E"
+#  bridge: vmbr0
+#onboot: True
+#ostype: l26
+#rng0:
+#  source: "/dev/urandom"
+#scsihw: virtio-scsi-pci
+#serial0: socket
+#virtio0:
+#  import-from: "@@IMPORT:group=local/fcos,pick=latest@@"
+  # https://www.calhoun.io/intro-to-templates-p3-functions/
+  #import-from: "{{ getlatest(\"local\", \"fcos\") }}"
+#  file:    local-lvm:0
+#  discard: "on"
+#  size: "15G"
+#watchdog:
+#  model:  i6300esb
+#  action: reset
+#args: "-fw_cfg name=opt/com.coreos/config,file=@@IGNITION:storage=ignition,format=iso,template=name,tags=master@@"
+ipconfig0:
+  ip: 192.168.180.201/17
+  gw: 192.168.178.1

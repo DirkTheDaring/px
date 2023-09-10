@@ -1,0 +1,10 @@
+vars: {}
+ignition:
+  enabled: false
+  vars: {}
+
+policies:
+  vmid: pickfirst
+
+containers: []
+virtualmachines: []

@@ -1,0 +1,3 @@
+small:
+  setting: small.yaml
+  template: ct-cattle.gotext

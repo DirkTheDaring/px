@@ -1,0 +1,22 @@
+# Mojave
+args: -device isa-applesmc,osk=ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc -smbios type=2 -cpu Penryn,kvm=on,vendor=GenuineIntel,vmware-cpuid-freq=on,check,+invtsc,+ssse3,+sse4.2,+popcnt,+aes,+xsave -device usb-kbd
+balloon: 0
+bios: ovmf
+boot: cdn
+bootdisk: sata2
+cores: 4
+cpu: Penryn
+efidisk0: samsung-ssd-500GB:vm-178232-disk-1,size=4M
+machine: q35
+memory: 8192
+name: mojave.fritz.box
+net0: e1000-82545em=62:FA:D5:BF:50:E8,bridge=vmbr0
+numa: 0
+ostype: other
+sata0: shared:iso/OpenCore-v17.iso,size=150M
+sata2: samsung-ssd-500GB:vm-178232-disk-0,size=64G
+scsihw: virtio-scsi-pci
+smbios1: uuid=3402e8d2-85b2-47a2-bd8d-7116b2a3c3d4
+sockets: 1
+vga: virtio,memory=128
+vmgenid: 6cfc9e1f-8a58-4d46-b0c4-a46d8ced3afc

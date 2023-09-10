@@ -1,0 +1,35 @@
+
+butane_cmd: ""
+butane_args:
+- "--pretty"
+
+butane_files_dir: "butane"
+
+output_dir: "output"
+debug_level: 10
+
+hostname: ""
+
+template: ""
+
+username: "core"
+password_hash: ""
+ssh_authorized_keys: []
+
+http_proxy: ""
+
+role: "master"
+
+services: []
+remove_packages: []
+packages: []
+extra_packages: []
+modules: []
+
+disks: []
+
+net: []
+apiservers: []
+keepalived: {}
+trees: []
+

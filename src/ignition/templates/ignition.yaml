@@ -1,0 +1,205 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+  - groups:
+    - sudo
+    name: {{ .username }}
+    {{if .password_hash }}password_hash: {{ .password_hash }}{{end}}
+    {{if .ssh_authorized_keys }}ssh_authorized_keys:{{end}}
+{{range $index, $element := .ssh_authorized_keys }}    - "{{ $element }}"
+{{ end }}
+systemd:
+  units:
+  - name: update-ca-trust.service
+    enabled: true
+    contents: |
+      [Unit]
+      ConditionFirstBoot=true
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/update-ca-trust
+      [Install]
+      WantedBy=multi-user.target
+
+  - name: install-modules-and-packages.service
+    enabled: true
+    contents: |
+      [Unit]
+      ConditionFirstBoot=true
+      After=network-online.target
+      Before=sshd.service
+      [Service]
+      Type=oneshot
+{{if .remove_packages }}      ExecStart=/usr/bin/rpm-ostree override remove {{ join .remove_packages " " }}{{end}}
+{{if .modules  }}      ExecStart=/usr/bin/rpm-ostree ex module install {{ join .modules " " }}{{end}}
+{{if .services }}      ExecStart=/usr/bin/touch /etc/secondboot.txt{{ end }}
+{{if .packages }}      ExecStart=/usr/bin/rpm-ostree install --reboot --idempotent {{ join .packages " " }}{{ if .extra_packages }} {{  join .extra_packages " " }}{{end}}{{end}}
+      [Install]
+      WantedBy=multi-user.target
+
+{{if .services }}
+  - name: secondboot.service
+    enabled: true
+    contents: |
+      [Unit]
+      ConditionPathExists=/etc/secondboot.txt
+      After=network-online.target
+      Before=sshd.service
+      [Service]
+      Type=oneshot
+{{range $index, $element := .services }}      ExecStart=/usr/bin/systemctl enable {{ $element }}.service
+      ExecStart=/usr/bin/systemctl start  {{ $element }}.service
+{{end }}
+      ExecStart=/usr/bin/rm /etc/secondboot.txt
+      [Install]
+      WantedBy=multi-user.target
+{{end}}
+{{if .http_proxy }}
+  - name: rpm-ostreed.service
+    dropins:
+    - name: override.conf
+      contents: |
+        [Service]
+        EnvironmentFile=/etc/sysconfig/proxy.env
+{{end}}
+
+# https://docs.fedoraproject.org/en-US/fedora-coreos/storage/
+# Fedora CoreOS requires the root filesystem to be at least 8 GiB
+
+storage:
+  filesystems:
+{{if .disks}}{{range $index, $disk := .disks }}
+  - path:   {{ $disk.path }}
+    device: {{ $disk.device }}
+    format: xfs
+    wipe_filesystem: false
+    label: {{ $disk.label }}
+    with_mount_unit: true
+{{end}}{{end}}
+  files:
+{{if .self.name }}
+  - contents:
+      inline: {{ .self.name }}
+    group:
+      name: root
+    mode: {{ 0644 }} # 0644 octal
+    path: /etc/hostname
+    user:
+      name: root
+{{end}}
+
+{{if .self.ipconfig0 }}
+  - path: /etc/NetworkManager/system-connections/{{ .interface_name0 }}.nmconnection
+    mode: {{ 0600 }} # 0600 octal
+    contents:
+      inline: |
+        [connection]
+        type=ethernet
+        interface-name={{ .interface_name0 }}
+
+        [ethernet]
+        mac-address={{ .self.net0.macaddr }}
+
+        [ipv4]
+        method=manual
+        addresses={{ .self.ipconfig0.ip }}
+{{if .self.ipconfig0.gw }}        gateway={{ .self.ipconfig0.gw }}{{end}}
+{{if .self.nameserver }}        dns={{ .self.nameserver }}{{end}}
+{{end}}
+{{if .self.ipconfig1 }}
+  - path: /etc/NetworkManager/system-connections/{{ .interface_name1 }}.nmconnection
+    mode: {{ 0600 }} # 0600 octal
+    contents:
+      inline: |
+        [connection]
+        type=ethernet
+        interface-name={{ .interface_name1 }}
+        
+        [ethernet]
+        mac-address={{ .self.net1.macaddr }}
+        
+        [ipv4]
+        method=manual
+        addresses={{ .self.ipconfig1.ip }}
+  {{if .self.ipconfig1.gw }}        gateway={{ .self.ipconfig1.gw }}{{end}}
+  {{if .self.nameserver1 }}        dns={{ .self.nameserver1 }}{{end}}
+  {{end}}
+
+{{if .highavailability_enabled }}
+{{ template "highavailability" . }}
+{{end}}
+{{if .http_proxy }}
+  - path: /etc/sysconfig/proxy.env
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        http_proxy={{ .http_proxy }}
+        https_proxy={{ .http_proxy }}
+{{end}}
+  - path: /etc/systemd/network/10-flannel.link
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        # /etc/systemd/network/10-flannel.link
+        # https://github.com/coreos/fedora-coreos-tracker/issues/574
+        # https://github.com/coreos/flannel/issues/1155
+        [Match]
+        OriginalName=flannel*
+        [Link]
+        MACAddressPolicy=none
+  - path: /etc/systemd/network/20-cilium.link
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        #/etc/systemd/network/20-cilium.link
+        [Match]
+        OriginalName=cilium*
+        [Link]
+        MACAddressPolicy=none
+  - path: /etc/sysctl.d/reverse-path-filter.conf
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        #/etc/sysctl.d/reverse-path-filter.conf
+        # Required by cilium
+        net.ipv4.conf.default.rp_filter=0
+        net.ipv4.conf.*.rp_filter=0
+  - path: /etc/sysctl.d/k8s.conf
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        # Root cause
+        # https://github.com/kubernetes/kubernetes/issues/64315
+        # Solution:
+        # https://github.com/giantswarm/k8scloudconfig/blob/master/files/conf/hardening.conf#L4
+        # Other sources:
+        # https://gist.github.com/ntamvl/7c41acee650d376863fd940b99da836f
+        
+        fs.inotify.max_user_watches=1048576
+        fs.inotify.max_user_instances=1000000
+  - path: /etc/zincati/config.d/config.toml
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        [updates]
+        enabled = false
+
+{{ if .persistent_modules }}
+  - path: /etc/modules-load.d/persistent-modules.conf
+    mode: {{ 0644 }} # 0644 octal
+    contents:
+      inline: |
+        # Created by ignition
+{{ range $index, $element := .persistent_modules }}        {{ $element }}
+{{ end }}
+{{ end }}   
+{{if ne (len .trees) 0 }}
+  # search path for local is determined via commandlineswith --file-dir
+  # butane cannot resolve synmlinks in the  --files-dir path, therefore
+  # it is done in the code
+  trees:
+{{range $index, $element := .trees }}
+  - local: {{ $element }}
+{{end}}
+{{end}}
