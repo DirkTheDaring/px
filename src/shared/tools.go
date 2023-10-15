@@ -161,25 +161,56 @@ func PickCluster(configData map[string]interface{}, name string) (map[string]int
 	return nil, errors.New("cluster name not found: " + name)
 }
 
+
 func StringSortMachines(machines []map[string]interface{}, fieldNames []string, ascending []bool) []map[string]interface{} {
 
-	total := len(fieldNames)
-	sort.Slice(machines, func(i, j int) bool {
-		k := 0
-		for k = 0; k < total-1; k++ {
-			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", k)
-			if machines[i][fieldNames[k]].(string) != machines[j][fieldNames[k]].(string) {
+	count := 0 
+        newMachines := []map[string]interface{}{}
+
+	for _, item := range machines {
+		found := true
+		for k := 0; k < len(fieldNames); k++ {
+			if item[fieldNames[k]] == nil {
+				found = false
 				break
 			}
 		}
+		if !found  {
+			continue
+		}
+		count++;
+		fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", item[fieldNames[0]])
+		newMachines = append(newMachines, item)
+	}
+
+
+	sort.Slice(newMachines, func(i, j int) bool {
+		k := 0
+		/*
+		for k = 0; k < count-1; k++ {
+			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", k)
+
+			a := newMachines[i][fieldNames[k]].(string) 
+			b := newMachines[j][fieldNames[k]].(string) 
+			if a != b {
+				break
+			}
+		}
+		*/
 
 		if ascending[k] == true {
-			return machines[i][fieldNames[k]].(string) < machines[j][fieldNames[k]].(string)
+			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %T\n", machines[i][fieldNames[k]])
+			a := newMachines[i][fieldNames[k]].(string)
+			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %T\n", machines[j][fieldNames[k]])
+			b := newMachines[j][fieldNames[k]].(string)
+			return a < b
 		} else {
-			return machines[i][fieldNames[k]].(string) > machines[j][fieldNames[k]].(string)
+			a := newMachines[i][fieldNames[k]].(string)
+			b := newMachines[j][fieldNames[k]].(string)
+			return a > b
 		}
 	})
-	return machines
+	return newMachines
 }
 func JoinClusterAndSelector(pxCluster PxCluster, selectors map[string]interface{}) []map[string]interface{} {
 	storageNames := pxCluster.GetStorageNames()

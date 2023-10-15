@@ -1,4 +1,3 @@
-
 * How to add an template to a specific machine.
 
 * How download and install butane.
@@ -17,4 +16,3 @@ PX_CATTLE_TEMPLATE
 cobra-cli init
 
 cobra-cli add create
-

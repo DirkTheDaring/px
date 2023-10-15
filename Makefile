@@ -43,5 +43,6 @@ publish: release
 distclean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(RELEASE_DIR)
+	rm -f src/px
 
 .PHONY: build test release publish
