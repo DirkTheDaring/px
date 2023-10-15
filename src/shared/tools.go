@@ -179,7 +179,7 @@ func StringSortMachines(machines []map[string]interface{}, fieldNames []string, 
 			continue
 		}
 		count++;
-		fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", item[fieldNames[0]])
+		//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", item[fieldNames[0]])
 		newMachines = append(newMachines, item)
 	}
 
