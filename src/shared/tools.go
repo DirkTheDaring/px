@@ -163,6 +163,7 @@ func PickCluster(configData map[string]interface{}, name string) (map[string]int
 
 
 func StringSortMachines(machines []map[string]interface{}, fieldNames []string, ascending []bool) []map[string]interface{} {
+	//fmt.Fprintf(os.Stderr, "StringSortMachines machines: %v fieldNames: %v\n", machines, fieldNames)
 
 	count := 0 
         newMachines := []map[string]interface{}{}
