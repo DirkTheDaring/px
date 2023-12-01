@@ -47,51 +47,67 @@ func PtrToString(val reflect.Value, boolValues []string) (string, bool) {
 	return value, false
 }
 
-func flatten(myval reflect.Value) string {
-	if myval.Kind() != reflect.Struct {
+
+// flatten converts a struct to a string representation.
+// It processes each field of the struct and concatenates their json tag names
+// and values into a comma-separated string.
+func flatten(v reflect.Value) string {
+
+	if v.Kind() != reflect.Struct {
 		return ""
 	}
-	iface := myval.Interface()
-	valueOf := reflect.ValueOf(iface)
 
-	result := ""
+	var result strings.Builder
+	//fmt.Printf("number of fields: %+v\n", v.NumField())
 
-	for i := 0; i < valueOf.NumField(); i++ {
-		struct_field := valueOf.Type().Field(i)
-		varname := struct_field.Name
-		tagName := strings.Split(struct_field.Tag.Get("json"), ",")[0]
-		//fmt.Printf("  tagName: %s\n", tagName)
-		val := valueOf.FieldByName(varname)
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := v.Type().Field(i)
+		tagName := strings.Split(fieldType.Tag.Get("json"), ",")[0]
+
+		if tagName == "" {
+			//fmt.Printf("no tagname\n")
+			continue
+		}
+
+
 		element := ""
-		if val.Kind() == reflect.Ptr {
-			value, ok := PtrToString(val, nil)
+		//fmt.Printf("field kind: %v\n", field.Kind())
+		switch field.Kind() {
+		case reflect.Ptr:
+			value, ok := PtrToString(field, nil)
 			if !ok {
 				continue
 			}
 			element = tagName + "=" + value
-			//fmt.Fprintf(os.Stderr, "elem: %s\n", element)
 
-		} else if val.Kind() == reflect.String {
-			element = tagName + "=" + val.String()
-		} else if val.Kind() == reflect.Bool {
-			if val.Bool() {
+		case reflect.String:
+			element = tagName + "=" + field.String()
+
+		case reflect.Bool:
+			if field.Bool() {
 				element = tagName + "=1"
-
 			} else {
 				element = tagName + "=0"
-
 			}
+		default:
+			//fmt.Printf("type not found: %v\n", field.Kind())
+			continue
+		
 		}
-		if result == "" {
-			result = element
-		} else {
-			result = result + "," + element
+
+		if i > 0 {
+			result.WriteString(",")
 		}
+		result.WriteString(element)
+
 
 	}
-	//fmt.Printf("  VALUES %s\n", result)
-	return result
+
+	return result.String()
 }
+
+
 
 // https://pkg.go.dev/reflect#Zero
 func copyGeneral(dst interface{}, src interface{}) {
@@ -124,12 +140,27 @@ func copyGeneral(dst interface{}, src interface{}) {
 		} else {
 
 			//fmt.Printf("XXX_KEY %+v\n", src_field.Name)
-			//fmt.Printf("VAL %+v\n", result)
+			//fmt.Printf("XXX_VAL %+v\n", result[0].Kind())
+
+			if result[0].Kind() == reflect.Bool {
+				var val int32 = 0
+				if result[0].Bool() {
+					val = 1
+				} else {
+					val = 0
+				}
+
+				//fmt.Printf("YYY_VAL %+v\n", val)
+				params := []reflect.Value{reflect.ValueOf(val)}
+				dst_p.MethodByName("Set" + src_field.Name).Call(params)
+			} else {
+				val := flatten(result[0])
+				params := []reflect.Value{reflect.ValueOf(val)}
+				dst_p.MethodByName("Set" + src_field.Name).Call(params)
+			}
 			//fmt.Printf("VAL %+v\n", result[0].CanInterface())
 			//fmt.Printf("VAL %+v\n", result[0].Interface())
-			val := flatten(result[0])
-			params := []reflect.Value{reflect.ValueOf(val)}
-			dst_p.MethodByName("Set" + src_field.Name).Call(params)
+
 		}
 
 	}

@@ -1,0 +1,47 @@
+SHUTDOWN-VM(1)                            Proxmox Virtual Environment                           SHUTDOWN-VM(1)
+
+NAME
+       shutdown-vm - Shut down a virtual machine in Proxmox Virtual Environment
+
+SYNOPSIS
+       shutdown-vm [OPTIONS] <VMID>
+
+DESCRIPTION
+       The shutdown-vm command is used to gracefully shut down a virtual machine (VM) running on Proxmox Virtual
+       Environment (PVE). This ensures that the VM is powered off safely, allowing for the proper termination of
+       processes and file system operations.
+
+OPTIONS
+       -h, --help
+              Show help message and exit.
+
+       -f, --force
+              Forcefully shut down the VM without attempting a graceful shutdown. This can result in data loss
+              and should be used with caution.
+
+ARGUMENTS
+       VMID   The unique identifier of the virtual machine you want to shut down.
+
+EXAMPLES
+       To gracefully shut down a virtual machine with VMID 100, use the following command:
+
+              shutdown-vm 100
+
+       To force shutdown a virtual machine with VMID 200, use the following command:
+
+              shutdown-vm -f 200
+
+AUTHOR
+       This manpage was written by [Your Name] for Proxmox Virtual Environment.
+
+REPORTING BUGS
+       Please report bugs to the Proxmox support team at https://www.proxmox.com/proxmox-ve/support.
+
+SEE ALSO
+       proxmox(1), start-vm(1), stop-vm(1)
+
+COPYRIGHT
+       Copyright © [Year] [Your Company Name]. This is free software; see the source for copying conditions. There
+       is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Proxmox Virtual Environment                        [Your Company Name]                           SHUTDOWN-VM(1)

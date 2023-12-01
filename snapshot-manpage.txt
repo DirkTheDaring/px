@@ -1,0 +1,59 @@
+SNAPSHOT-VM(1)                            Proxmox Virtual Environment                           SNAPSHOT-VM(1)
+
+NAME
+       snapshot-vm - Create and manage snapshots for virtual machines in Proxmox Virtual Environment
+
+SYNOPSIS
+       snapshot-vm [OPTIONS] <VMID> <SNAPSHOT_NAME>
+
+DESCRIPTION
+       The snapshot-vm command allows you to create and manage snapshots for virtual machines (VMs) running on
+       Proxmox Virtual Environment (PVE). Snapshots are point-in-time copies of a VM's state, which can be used for
+       backup, recovery, and testing purposes.
+
+OPTIONS
+       -h, --help
+              Show help message and exit.
+
+       -c, --create
+              Create a new snapshot with the specified name.
+
+       -l, --list
+              List all snapshots for the specified VM.
+
+       -d, --delete <SNAPSHOT_NAME>
+              Delete the snapshot with the specified name.
+
+ARGUMENTS
+       VMID   The unique identifier of the virtual machine you want to work with.
+
+       SNAPSHOT_NAME
+              The name of the snapshot to create, list, or delete.
+
+EXAMPLES
+       To create a new snapshot named "backup" for a virtual machine with VMID 100, use the following command:
+
+              snapshot-vm -c 100 backup
+
+       To list all snapshots for VMID 100, use the following command:
+
+              snapshot-vm -l 100
+
+       To delete a snapshot named "backup" for VMID 100, use the following command:
+
+              snapshot-vm -d 100 backup
+
+AUTHOR
+       This manpage was written by [Your Name] for Proxmox Virtual Environment.
+
+REPORTING BUGS
+       Please report bugs to the Proxmox support team at https://www.proxmox.com/proxmox-ve/support.
+
+SEE ALSO
+       proxmox(1), rollback-vm(1), restore-vm(1)
+
+COPYRIGHT
+       Copyright © [Year] [Your Company Name]. This is free software; see the source for copying conditions. There
+       is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Proxmox Virtual Environment                        [Your Company Name]                           SNAPSHOT-VM(1)
