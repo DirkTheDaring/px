@@ -502,30 +502,33 @@ func GetIpv4Address(machine map[string]interface{}, _type string) (string, bool)
 }
 
 func DeriveVmidFromIp4Address(ip string) (int, error) {
-
-	array := strings.Split(ip, "/")
-
-	if len(array) != 2 {
-		return 0, nil
+	// Split the IP address and subnet mask
+	parts := strings.Split(ip, "/")
+	if len(parts) != 2 {
+		return 0, errors.New("invalid IP format: expected IPv4 and subnet mask")
 	}
 
-	ipv4 := array[0]
-	array2 := strings.Split(ipv4, ".")
+	// Extract the IPv4 part
+	ipv4 := parts[0]
 
-	if len(array2) != 4 {
-		return 0, nil
+	// Split the IPv4 address into its components
+	octets := strings.Split(ipv4, ".")
+	if len(octets) != 4 {
+		return 0, errors.New("invalid IPv4 format: expected four octets")
 	}
 
-	a, err := strconv.Atoi(array2[2])
+	// Convert the third and fourth octets to integers
+	a, err := strconv.Atoi(octets[2])
 	if err != nil {
-		return 0, nil
+		return 0, errors.New("invalid third octet: not an integer")
 	}
 
-	b, err := strconv.Atoi(array2[3])
+	b, err := strconv.Atoi(octets[3])
 	if err != nil {
-		return 0, nil
+		return 0, errors.New("invalid fourth octet: not an integer")
 	}
 
+	// Calculate the new VM ID
 	newVmid := a*1000 + b
 	return newVmid, nil
 }
