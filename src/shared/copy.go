@@ -153,6 +153,10 @@ func copyGeneral(dst interface{}, src interface{}) {
 				//fmt.Printf("YYY_VAL %+v\n", val)
 				params := []reflect.Value{reflect.ValueOf(val)}
 				dst_p.MethodByName("Set" + src_field.Name).Call(params)
+			} else if result[0].Kind() == reflect.Int64 || result[0].Kind() == reflect.Int32 {
+				var val int64 =  result[0].Int()
+				params := []reflect.Value{reflect.ValueOf(val)}
+				dst_p.MethodByName("Set" + src_field.Name).Call(params)
 			} else {
 				val := flatten(result[0])
 				params := []reflect.Value{reflect.ValueOf(val)}

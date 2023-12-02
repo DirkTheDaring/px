@@ -534,7 +534,8 @@ func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest *pxapiflat.Up
 	}
 
 	if updateVMConfigRequest == nil {
-		updateVMConfigRequest = pxapiflat.NewUpdateVMConfigRequest()
+		// the parameter (0) is for setting memory, but this always overwritten afterwards
+		updateVMConfigRequest = pxapiflat.NewUpdateVMConfigRequest(0)
 	}
 
 	resp, r, err := apiClient.NodesApi.UpdateVMConfig(context, node, vmid).UpdateVMConfigRequest(*updateVMConfigRequest).Execute()
@@ -556,7 +557,8 @@ func UpdateVMConfigSync(node string, vmid int64, updateVMConfigSyncRequest *pxap
 		return err
 	}
 	if updateVMConfigSyncRequest == nil {
-		updateVMConfigSyncRequest = pxapiflat.NewUpdateVMConfigSyncRequest()
+		// the parameter (0) is for setting memory, but this always overwritten afterwards
+		updateVMConfigSyncRequest = pxapiflat.NewUpdateVMConfigSyncRequest(0)
 	}
 
 	resp, r, err := apiClient.NodesApi.UpdateVMConfigSync(context, node, vmid).UpdateVMConfigSyncRequest(*updateVMConfigSyncRequest).Execute()
