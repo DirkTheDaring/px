@@ -107,6 +107,17 @@ storage:
 {{if .self.ipconfig0.gw }}        gateway={{ .self.ipconfig0.gw }}{{end}}
 {{if .self.nameserver }}        dns={{ .self.nameserver }}{{end}}
 {{end}}
+{{if .self.ip6config0 }}
+        [ipv6]
+        method=manual
+        addr-gen-mode=default
+        #address1=fd00::ab:cd:ef:1/64,fe80::3ea6:2fff:fe76:bf6d
+        address1={{ .self.ip6config0.ip }},{{ self.ip6config0.gateway }}
+        #dns=fe80::3ea6:2fff:fe76:bf6d;
+{{if .self.ip6config0.nameserver }}        dns={{ .self.ip6config0.nameserver }}{{end}}
+        #dns-search=fritz.box;office.kaupon.de;kaupon.de;
+{{if .self.ip6config0.dns_search }}        dns-search={{ .self.ip6config0.dns_search }}{{end}}
+{{end}}
 {{if .self.ipconfig1 }}
   - path: /etc/NetworkManager/system-connections/{{ .interface_name1 }}.nmconnection
     mode: {{ 0600 }} # 0600 octal

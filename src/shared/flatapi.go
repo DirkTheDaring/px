@@ -37,7 +37,7 @@ func GetClusterNextId(node string) (int64, error) {
 		return -1, err
 	}
 
-	resp, r, err := apiClient.ClusterApi.GetClusterNextid(context).Execute()
+	resp, r, err := apiClient.ClusterAPI.GetClusterNextid(context).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `ClusterApi.GetClusterNextid``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -55,7 +55,7 @@ func GetStorageContent(node string, storage string) (*pxapiflat.GetStorageConten
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetStorageContent(context, node, storage).Execute()
+	resp, r, err := apiClient.NodesAPI.GetStorageContent(context, node, storage).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetStorageContent``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -76,7 +76,7 @@ func Upload(node string, storage string, content string, filename *os.File) (*px
 	//checksumAlgorithm := "checksumAlgorithm_example" // string |  (optional)
 	//tmpfilename := "tmpfilename_example"             // string |  (optional)
 
-	resp, r, err := apiClient.NodesApi.UploadFile(context, node, storage).Content(content).Filename(filename).Execute()
+	resp, r, err := apiClient.NodesAPI.UploadFile(context, node, storage).Content(content).Filename(filename).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.CreateNodesSingleStorageSingleUpload``: %v\n", err)
@@ -94,7 +94,7 @@ func GetStorages(node string) (*pxapiflat.GetStorages200Response, error) {
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.GetStorages(context, node).Execute()
+	resp, r, err := apiClient.NodesAPI.GetStorages(context, node).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetNodesSingleStorage``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -113,7 +113,7 @@ func GetClusterResources(node string) (*pxapiflat.GetClusterResources200Response
 		return nil, err
 	}
 
-	resp, r, err := apiClient.ClusterApi.GetClusterResources(context).Execute()
+	resp, r, err := apiClient.ClusterAPI.GetClusterResources(context).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `ClusterApi.GetClusterResources``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -129,7 +129,7 @@ func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest pxapiflat.Upd
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.UpdateVMConfig(context, node, vmid).UpdateVMConfigRequest(updateVMConfigRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.UpdateVMConfig(context, node, vmid).UpdateVMConfigRequest(updateVMConfigRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.UpdateVMConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -150,7 +150,7 @@ func CreateVM(node string, flatmachine pxapiflat.CreateVMRequest) (*pxapiflat.Cr
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.CreateVM(context, node).CreateVMRequest(flatmachine).Execute()
+	resp, r, err := apiClient.NodesAPI.CreateVM(context, node).CreateVMRequest(flatmachine).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.CreateVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -169,7 +169,7 @@ func CreateVMSnapshot(node string, vmid int64, snapshotName string) (*pxapiflat.
 	}
 	createVMSnapshotRequest := *pxapiflat.NewCreateVMSnapshotRequest(snapshotName)
 
-	resp, r, err := apiClient.NodesApi.CreateVMSnapshot(context, node, vmid).CreateVMSnapshotRequest(createVMSnapshotRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.CreateVMSnapshot(context, node, vmid).CreateVMSnapshotRequest(createVMSnapshotRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.CreateVMSnapshot``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -185,7 +185,7 @@ func DeleteVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.DeleteVM(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.DeleteVM(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.DeleteVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -202,7 +202,7 @@ func DeleteVMSnapshot(node string, vmid int64, snapname string) (*pxapiflat.Task
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.DeleteVMSnapshot(context, node, vmid, snapname).Execute()
+	resp, r, err := apiClient.NodesAPI.DeleteVMSnapshot(context, node, vmid, snapname).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.DeleteVMSnapshot``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -220,7 +220,7 @@ func GetCurrentVMStatus(node string, vmid int64) (*pxapiflat.GetCurrentVMStatus2
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetCurrentVMStatus(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetCurrentVMStatus(context, node, vmid).Execute()
 
 	if r.StatusCode == 500 {
 		fmt.Fprintf(os.Stderr, "500 Full HTTP response: %v\n", r)
@@ -242,7 +242,7 @@ func GetVM(node string, vmid int64) (*pxapiflat.GetVM200Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVM(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVM(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -259,7 +259,7 @@ func GetVMConfig(node string, vmid int64) (*pxapiflat.GetVMConfig200Response, er
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVMConfig(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVMConfig(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -276,7 +276,7 @@ func GetVMConfigPending(node string, vmid int64) (*pxapiflat.GetVMConfigPending2
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVMConfigPending(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVMConfigPending(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMConfigPending``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -294,7 +294,7 @@ func GetVMSnapshot(node string, vmid int64) (*pxapiflat.GetVMSnapshots200Respons
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVMSnapshots(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVMSnapshots(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMSnapshots``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -311,7 +311,7 @@ func GetVMSnapshotConfig(node string, vmid int64, snapname string) (*pxapiflat.G
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVMSnapshotConfig(context, node, vmid, snapname).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVMSnapshotConfig(context, node, vmid, snapname).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMSnapshotConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -328,7 +328,7 @@ func GetVMSnapshots(node string, vmid int64) (*pxapiflat.GetVMSnapshots200Respon
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVMSnapshots(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVMSnapshots(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMSnapshots``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -345,7 +345,7 @@ func GetVMs(node string) (*pxapiflat.GetVMs200Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetVMs(context, node).Execute()
+	resp, r, err := apiClient.NodesAPI.GetVMs(context, node).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMs``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -364,7 +364,7 @@ func RebootVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 	}
 	rebootVMRequest := *pxapiflat.NewRebootVMRequest() // RebootVMRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.RebootVM(context, node, vmid).RebootVMRequest(rebootVMRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.RebootVM(context, node, vmid).RebootVMRequest(rebootVMRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.RebootVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -386,7 +386,7 @@ func ResizeVMDisk(node string, vmid int64, disk string, size string) (*pxapiflat
 
 	resizeVMDiskRequest := *pxapiflat.NewResizeVMDiskRequest(disk, size) // ResizeVMDiskRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.ResizeVMDisk(context, node, vmid).ResizeVMDiskRequest(resizeVMDiskRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.ResizeVMDisk(context, node, vmid).ResizeVMDiskRequest(resizeVMDiskRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.ResizeVMDisk``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -407,7 +407,7 @@ func ResumeVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 	}
 	resumeVMRequest := *pxapiflat.NewResumeVMRequest() // ResumeVMRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.ResumeVM(context, node, vmid).ResumeVMRequest(resumeVMRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.ResumeVM(context, node, vmid).ResumeVMRequest(resumeVMRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.ResumeVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -426,7 +426,7 @@ func RollbackVMSnapshot(node string, vmid int64, snapname string) (*pxapiflat.Ta
 	}
 	rollbackVMSnapshotRequest := *pxapiflat.NewRollbackVMSnapshotRequest() // RollbackVMSnapshotRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.RollbackVMSnapshot(context, node, vmid, snapname).RollbackVMSnapshotRequest(rollbackVMSnapshotRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.RollbackVMSnapshot(context, node, vmid, snapname).RollbackVMSnapshotRequest(rollbackVMSnapshotRequest).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.RollbackVMSnapshot``: %v\n", err)
@@ -448,7 +448,7 @@ func ShutdownVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error)
 
 	//configuration := openapiclient.NewConfiguration()
 	//apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.NodesApi.ShutdownVM(context, node, vmid).ShutdownVMRequest(shutdownVMRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.ShutdownVM(context, node, vmid).ShutdownVMRequest(shutdownVMRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.ShutdownVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -468,7 +468,7 @@ func StartVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 	}
 	startVMRequest := *pxapiflat.NewStartVMRequest() // StartVMRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.StartVM(context, node, vmid).StartVMRequest(startVMRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.StartVM(context, node, vmid).StartVMRequest(startVMRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.StartVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -489,7 +489,7 @@ func StopVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 
 	stopVMRequest := *pxapiflat.NewStopVMRequest() // StopVMRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.StopVM(context, node, vmid).StopVMRequest(stopVMRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.StopVM(context, node, vmid).StopVMRequest(stopVMRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.StopVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -513,7 +513,7 @@ func SuspendVM(node string, vmid int64, suspendVMRequest *pxapiflat.SuspendVMReq
 		suspendVMRequest = pxapiflat.NewSuspendVMRequest()
 	}
 
-	resp, r, err := apiClient.NodesApi.SuspendVM(context, node, vmid).SuspendVMRequest(*suspendVMRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.SuspendVM(context, node, vmid).SuspendVMRequest(*suspendVMRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.SuspendVM``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -538,7 +538,7 @@ func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest *pxapiflat.Up
 		updateVMConfigRequest = pxapiflat.NewUpdateVMConfigRequest(0)
 	}
 
-	resp, r, err := apiClient.NodesApi.UpdateVMConfig(context, node, vmid).UpdateVMConfigRequest(*updateVMConfigRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.UpdateVMConfig(context, node, vmid).UpdateVMConfigRequest(*updateVMConfigRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.UpdateVMConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -561,7 +561,7 @@ func UpdateVMConfigSync(node string, vmid int64, updateVMConfigSyncRequest *pxap
 		updateVMConfigSyncRequest = pxapiflat.NewUpdateVMConfigSyncRequest(0)
 	}
 
-	resp, r, err := apiClient.NodesApi.UpdateVMConfigSync(context, node, vmid).UpdateVMConfigSyncRequest(*updateVMConfigSyncRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.UpdateVMConfigSync(context, node, vmid).UpdateVMConfigSyncRequest(*updateVMConfigSyncRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.UpdateVMConfigSync``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -585,7 +585,7 @@ func UpdateVMSnapshotConfig(node string, vmid int64, snapname string, updateVMSn
 		updateVMSnapshotConfigRequest = pxapiflat.NewUpdateVMSnapshotConfigRequest()
 	}
 
-	resp, r, err := apiClient.NodesApi.UpdateVMSnapshotConfig(context, node, vmid, snapname).UpdateVMSnapshotConfigRequest(*updateVMSnapshotConfigRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.UpdateVMSnapshotConfig(context, node, vmid, snapname).UpdateVMSnapshotConfigRequest(*updateVMSnapshotConfigRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.UpdateVMSnapshotConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -605,7 +605,7 @@ func CreateContainer(node string, createContainerRequest pxapiflat.CreateContain
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.CreateContainer(context, node).CreateContainerRequest(createContainerRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.CreateContainer(context, node).CreateContainerRequest(createContainerRequest).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.CreateContainer``: %v\n", err)
@@ -628,7 +628,7 @@ func CreateContainerSnapshot(node string, vmid int64, snapshotName string) (*pxa
 
 	createContainerSnapshotRequest := *pxapiflat.NewCreateContainerSnapshotRequest(snapshotName)
 
-	resp, r, err := apiClient.NodesApi.CreateContainerSnapshot(context, node, vmid).CreateContainerSnapshotRequest(createContainerSnapshotRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.CreateContainerSnapshot(context, node, vmid).CreateContainerSnapshotRequest(createContainerSnapshotRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.CreateContainerSnapshot``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -647,7 +647,7 @@ func DeleteContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, e
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.DeleteContainer(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.DeleteContainer(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.DeleteContainer``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -667,7 +667,7 @@ func DeleteContainerSnapshot(node string, vmid int64, snapname string) (*pxapifl
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.DeleteContainerSnapshot(context, node, vmid, snapname).Execute()
+	resp, r, err := apiClient.NodesAPI.DeleteContainerSnapshot(context, node, vmid, snapname).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.DeleteContainerSnapshot``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -686,7 +686,7 @@ func GetContainer(node string, vmid int64) (*pxapiflat.GetVM200Response, error) 
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetContainer(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainer(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainer``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -706,7 +706,7 @@ func GetContainerConfig(node string, vmid int64) (*pxapiflat.GetContainerConfig2
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.GetContainerConfig(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainerConfig(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainerConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -725,7 +725,7 @@ func GetContainerConfigPending(node string, vmid int64) (*pxapiflat.GetContainer
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetContainerConfigPending(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainerConfigPending(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainerConfigPending``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -745,7 +745,7 @@ func GetContainerSnapshot(node string, vmid int64, snapname string) (*pxapiflat.
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetContainerSnapshot(context, node, vmid, snapname).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainerSnapshot(context, node, vmid, snapname).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainerSnapshot``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -764,7 +764,7 @@ func GetContainerSnapshotConfig(node string, vmid int64, snapname string) (*pxap
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetContainerSnapshotConfig(context, node, vmid, snapname).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainerSnapshotConfig(context, node, vmid, snapname).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainerSnapshotConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -784,7 +784,7 @@ func GetContainerSnapshots(node string, vmid int64) (*pxapiflat.GetContainerSnap
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.GetContainerSnapshots(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainerSnapshots(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainerSnapshots``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -804,7 +804,7 @@ func GetContainerStatus(node string, vmid int64) (*pxapiflat.GetVM200Response, e
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.GetContainerStatus(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainerStatus(context, node, vmid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainerStatus``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -824,7 +824,7 @@ func GetContainers(node string) (*pxapiflat.GetContainers200Response, error) {
 		return nil, err
 	}
 
-	resp, r, err := apiClient.NodesApi.GetContainers(context, node).Execute()
+	resp, r, err := apiClient.NodesAPI.GetContainers(context, node).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetContainers``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -843,7 +843,7 @@ func GetCurrentContainerStatus(node string, vmid int64) (*pxapiflat.GetCurrentCo
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetCurrentContainerStatus(context, node, vmid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetCurrentContainerStatus(context, node, vmid).Execute()
 
 	// Not found, we use this function also check if a Container exists, so no error log here
 	if r.StatusCode == 500 {
@@ -868,7 +868,7 @@ func RebootContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, e
 		return nil, err
 	}
 	rebootContainerRequest := *pxapiflat.NewRebootContainerRequest() // RebootContainerRequest |  (optional)
-	resp, r, err := apiClient.NodesApi.RebootContainer(context, node, vmid).RebootContainerRequest(rebootContainerRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.RebootContainer(context, node, vmid).RebootContainerRequest(rebootContainerRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.RebootContainer``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -889,7 +889,7 @@ func ResizeContainerDisk(node string, vmid int64, resizeContainerDiskRequest pxa
 	}
 	//resizeContainerDiskRequest := *pxapiflat.NewResizeContainerDiskRequest("Disk_example", "Size_example") // ResizeContainerDiskRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.ResizeContainerDisk(context, node, vmid).ResizeContainerDiskRequest(resizeContainerDiskRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.ResizeContainerDisk(context, node, vmid).ResizeContainerDiskRequest(resizeContainerDiskRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.ResizeContainerDisk``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -911,8 +911,8 @@ func ResumeContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, e
 	}
 
 	//body := map[string]interface{}{ ... } // map[string]interface{} |  (optional)
-	//resp, r, err := apiClient.NodesApi.ResumeContainer(context, node, vmid).Body(body).Execute()
-	resp, r, err := apiClient.NodesApi.ResumeContainer(context, node, vmid).Execute()
+	//resp, r, err := apiClient.NodesAPI.ResumeContainer(context, node, vmid).Body(body).Execute()
+	resp, r, err := apiClient.NodesAPI.ResumeContainer(context, node, vmid).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.ResumeContainer``: %v\n", err)
@@ -934,8 +934,8 @@ func RollbackContainerSnapshot(node string, vmid int64, snapname string) (*pxapi
 	}
 
 	//body := map[string]interface{}{ ... } // map[string]interface{} |  (optional)
-	//resp, r, err := apiClient.NodesApi.RollbackContainerSnapshot(context, node, snapname, vmid).Body(body).Execute()
-	resp, r, err := apiClient.NodesApi.RollbackContainerSnapshot(context, node, vmid, snapname).Execute()
+	//resp, r, err := apiClient.NodesAPI.RollbackContainerSnapshot(context, node, snapname, vmid).Body(body).Execute()
+	resp, r, err := apiClient.NodesAPI.RollbackContainerSnapshot(context, node, vmid, snapname).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.RollbackContainerSnapshot``: %v\n", err)
@@ -958,7 +958,7 @@ func ShutdownContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response,
 
 	shutdownContainerRequest := *pxapiflat.NewShutdownContainerRequest() // ShutdownContainerRequest |  (optional)
 
-	resp, r, err := apiClient.NodesApi.ShutdownContainer(context, node, vmid).ShutdownContainerRequest(shutdownContainerRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.ShutdownContainer(context, node, vmid).ShutdownContainerRequest(shutdownContainerRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.ShutdownContainer``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -979,8 +979,8 @@ func StartContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, er
 	}
 
 	//startContainerRequest := *pxapiflat.NewStartContainerRequest() // StartContainerRequest |  (optional)
-	//resp, r, err := apiClient.NodesApi.StartContainer(context.Background(), node, vmid).StartContainerRequest(startContainerRequest).Execute()
-	resp, r, err := apiClient.NodesApi.StartContainer(context, node, vmid).Execute()
+	//resp, r, err := apiClient.NodesAPI.StartContainer(context.Background(), node, vmid).StartContainerRequest(startContainerRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.StartContainer(context, node, vmid).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.StartContainer``: %v\n", err)
@@ -1002,8 +1002,8 @@ func StopContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, err
 	}
 
 	//stopContainerRequest := *openapiclient.NewStopContainerRequest() // StopContainerRequest |  (optional)
-	//resp, r, err := apiClient.NodesApi.StopContainer(context.Background(), node, vmid).StopContainerRequest(stopContainerRequest).Execute()
-	resp, r, err := apiClient.NodesApi.StopContainer(context, node, vmid).Execute()
+	//resp, r, err := apiClient.NodesAPI.StopContainer(context.Background(), node, vmid).StopContainerRequest(stopContainerRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.StopContainer(context, node, vmid).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.StopContainer``: %v\n", err)
@@ -1024,8 +1024,8 @@ func SuspendContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, 
 		return nil, err
 	}
 	//body := map[string]interface{}{ ... } // map[string]interface{} |  (optional)
-	//resp, r, err := apiClient.NodesApi.SuspendContainer(context.Background(), node, vmid).Body(body).Execute()
-	resp, r, err := apiClient.NodesApi.SuspendContainer(context, node, vmid).Execute()
+	//resp, r, err := apiClient.NodesAPI.SuspendContainer(context.Background(), node, vmid).Body(body).Execute()
+	resp, r, err := apiClient.NodesAPI.SuspendContainer(context, node, vmid).Execute()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.SuspendContainer``: %v\n", err)
@@ -1046,7 +1046,7 @@ func UpdateContainerConfigSync(node string, vmid int64, updateContainerConfigSyn
 		return nil, err
 	}
 	//updateContainerConfigSyncRequest := *openapiclient.NewUpdateContainerConfigSyncRequest() // UpdateContainerConfigSyncRequest |  (optional)
-	resp, r, err := apiClient.NodesApi.UpdateContainerConfigSync(context, node, vmid).UpdateContainerConfigSyncRequest(updateContainerConfigSyncRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.UpdateContainerConfigSync(context, node, vmid).UpdateContainerConfigSyncRequest(updateContainerConfigSyncRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.UpdateContainerConfigSync``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -1071,7 +1071,7 @@ func UpdateContainerSnapshotConfig(node string, vmid int64, snapname string, upd
 
 	//configuration := openapiclient.NewConfiguration()
 	//apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.NodesApi.UpdateContainerSnapshotConfig(context, node, vmid, snapname).UpdateContainerSnapshotConfigRequest(updateContainerSnapshotConfigRequest).Execute()
+	resp, r, err := apiClient.NodesAPI.UpdateContainerSnapshotConfig(context, node, vmid, snapname).UpdateContainerSnapshotConfigRequest(updateContainerSnapshotConfigRequest).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.UpdateContainerSnapshotConfig``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -1088,7 +1088,7 @@ func GetNodeTaskStatus(node string, upid string) (*pxapiflat.GetNodeTaskStatus20
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
 	}
-	resp, r, err := apiClient.NodesApi.GetNodeTaskStatus(context, node, upid).Execute()
+	resp, r, err := apiClient.NodesAPI.GetNodeTaskStatus(context, node, upid).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetNodeTaskStatus``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)

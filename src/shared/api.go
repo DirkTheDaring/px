@@ -36,7 +36,7 @@ func GetJsonStorageContent(pxClient PxClient, node string, storage string) map[s
 	//      "ctime": 1659189753,
 	//      "volid": "myshared:vztmpl/Fedora-Container-Base-36-20220719.0-sshd.x86_64.tar.xz"
 	//    },
-	_, r, err := pxClient.ApiClient.NodesApi.GetStorageContent(pxClient.Context, node, storage).Execute()
+	_, r, err := pxClient.ApiClient.NodesAPI.GetStorageContent(pxClient.Context, node, storage).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetStorageContent``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)

@@ -39,7 +39,7 @@ func DumpSystem(configData map[string]interface{}, clusterName string) {
 }
 
 func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	_, r, err := apiClient.ClusterApi.GetClusterConfigNodes(context).Execute()
+	_, r, err := apiClient.ClusterAPI.GetClusterConfigNodes(context).Execute()
 	// {
 	//  "data": [
 	//    {
@@ -96,7 +96,7 @@ func GetClusterNodes(pxClients []shared.PxClient) []shared.PxClient {
 }
 
 func GetClusterResources(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	_, r, err := apiClient.ClusterApi.GetClusterResources(context).Execute()
+	_, r, err := apiClient.ClusterAPI.GetClusterResources(context).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `ClusterApi.GetClusterResources``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -185,7 +185,7 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[str
 	//    }
 	//  ]
 	//}
-	_, r, err := apiClient.StorageApi.GetStorage(context).Execute()
+	_, r, err := apiClient.StorageAPI.GetStorage(context).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `StorageApi.GetStorage``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)

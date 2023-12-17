@@ -39,7 +39,7 @@ func LoginNode(url string, username string, password string, insecureskipverify 
 	apiClient := pxapiflat.NewAPIClient(configuration)
 	createAccessTicketRequest := *pxapiflat.NewCreateAccessTicketRequest(password, username)
 
-	resp, _, err := apiClient.AccessApi.CreateAccessTicket(context_timeout).CreateAccessTicketRequest(createAccessTicketRequest).Execute()
+	resp, _, err := apiClient.AccessAPI.CreateAccessTicket(context_timeout).CreateAccessTicketRequest(createAccessTicketRequest).Execute()
 
 	if err != nil {
 		// cluster is not available, skip
