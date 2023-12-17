@@ -28,47 +28,66 @@ func dataToJSON(data map[string]interface{}) []byte {
 	return json
 }
 
-func CreateIgnition(data map[string]interface{}, name string) bytes.Buffer {
+// CreateIgnition generates an Ignition configuration based on provided data.
+func CreateIgnition(data map[string]interface{}, name string) (bytes.Buffer, error) {
+    var buffer bytes.Buffer
 
-	buffer := bytes.Buffer{}
-	var outStream io.Writer
-	outStream = &buffer
+    if err := handleDebugMode(data, name); err != nil {
+        return buffer, err
+    }
 
-	debugLevel := configmap.GetIntWithDefault(data, "debug_level", 0)
-	//fmt.Fprintf(os.Stderr, "DEBUGL LEVEL: %v\n", debugLevel)
+    if err := processButaneFilesDir(data); err != nil {
+        return buffer, err
+    }
 
-	if debugLevel > 0 {
-		json := dataToJSON(data)
-		WriteFile(name+".vars.json", string(json))
-	}
+    if err := renderIgnitionYaml(&buffer, data); err != nil {
+        return buffer, err
+    }
 
-	// Quirk for butane, if butane_files-dir contains a symlink, it fails
-	// therefore this section converts an symlink to an absolute path
-	varname := "butane_files_dir"
-	butaneFilesDir := configmap.GetStringWithDefault(data, varname, "butane")
-	butaneFilesDir = convertSymlinkToPath(data, butaneFilesDir)
-	data[varname] = butaneFilesDir
+    return generateButaneOutput(&buffer, data, name)
+}
 
-	baseName := filepath.Base(butaneFilesDir)
-	//parentDir := filepath.Dir(butaneFilesDir)
+// handleDebugMode handles debug mode operations.
+func handleDebugMode(data map[string]interface{}, name string) error {
+    debugLevel := configmap.GetIntWithDefault(data, "debug_level", 0)
+    if debugLevel > 0 {
+	json, err := json.Marshal(data)
+        if err != nil {
+            return err
+        }
+        return WriteFile(name+".vars.json", string(json))
+    }
+    return nil
+}
 
-	configmap.SetString(data, "trees", baseName)
+// processButaneFilesDir processes the 'butane_files_dir' directory.
+func processButaneFilesDir(data map[string]interface{}) error {
+    butaneFilesDir := configmap.GetStringWithDefault(data, "butane_files_dir", "butane")
+    convertedDir:= convertSymlinkToPath(data, butaneFilesDir)
+    //convertedDir, err := convertSymlinkToPath(data, butaneFilesDir)
+    //if err != nil {
+    //    return err
+    //}
+    data["butane_files_dir"] = convertedDir
+    configmap.SetString(data, "trees", filepath.Base(convertedDir))
+    return nil
+}
 
-	RenderIgnitionYaml(outStream, data)
+// renderIgnitionYaml renders Ignition YAML configuration.
+func renderIgnitionYaml(outStream io.Writer, data map[string]interface{}) error {
+    RenderIgnitionYaml(outStream, data)
+    return nil
+}
 
-	if debugLevel > 0 {
-		//fmt.Fprintf(os.Stderr, "Writing file: %v\n", name+".yaml")
-		WriteFile(name+".yaml", buffer.String())
-	}
+// generateButaneOutput generates output for Butane.
+func generateButaneOutput(inStream io.Reader, data map[string]interface{}, name string) (bytes.Buffer, error) {
+    output :=  Butane(inStream, data)
 
-	//fmt.Fprintf(os.Stderr, "%s\n", buffer.String())
-
-	var inStream io.Reader
-	inStream = &buffer
-	output := Butane(inStream, data)
-	if debugLevel > 0 {
-		WriteFile(name+".json", output.String())
-	}
-
-	return output
+    debugLevel := configmap.GetIntWithDefault(data, "debug_level", 0)
+    if debugLevel > 0 {
+        if err := WriteFile(name+".json", output.String()); err != nil {
+            return output, err
+        }
+    }
+    return output, nil
 }

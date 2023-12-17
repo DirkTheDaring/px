@@ -6,28 +6,52 @@ import (
 	"os"
 	"px/configmap"
 )
-
-func PadBuffer(buffer bytes.Buffer, length int) bytes.Buffer {
-	size := length - buffer.Len()
-	if size > 0 {
-		payload := make([]byte, size)
-		for i := 0; i < size; i++ {
-			payload[i] = 32
-		}
-		buffer.Write(payload)
-	}
-	return buffer
+// PadBuffer pads the buffer with spaces until it reaches the specified length.
+// It modifies the buffer in place.
+func PadBuffer(buffer *bytes.Buffer, length int) {
+    size := length - buffer.Len()
+    if size > 0 {
+        payload := bytes.Repeat([]byte{' '}, size)
+        buffer.Write(payload)
+    }
 }
 
+// A proxmox ignition is padded to 16384 if it is smaller than 16384, otherwise
+// the upload function in proxmox does not wor (QUIRK!)
 func CreateProxmoxIgnition(configData map[string]interface{}, name string) bytes.Buffer {
-	result := CreateIgnition(configData, name)
-	result = PadBuffer(result, 16384)
+	result, err := CreateIgnition(configData, name)
+	if err != nil {
+		var buffer bytes.Buffer
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return buffer
+	}
+	PadBuffer(&result, 16384)
 	return result
 }
-func WriteFile(name string, content string) {
-	f, _ := os.Create(name)
-	f.WriteString(content)
-	f.Close()
+
+// WriteFile creates a file with the given name and writes the content to it.
+// It returns an error if any operation fails.
+func WriteFile(name string, content string) error {
+    // Create or truncate the file
+    f, err := os.Create(name)
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+
+    // Write the content to the file
+    _, err = f.WriteString(content)
+    if err != nil {
+        return err
+    }
+
+    // Ensure that the content is actually written to disk
+    err = f.Sync()
+    if err != nil {
+        return err
+    }
+
+    return nil
 }
 
 func CreateProxmoxIgnitionFile(configData map[string]interface{}, name string) {
