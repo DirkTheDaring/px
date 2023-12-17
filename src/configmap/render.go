@@ -3,7 +3,6 @@ package configmap
 import (
 	"embed"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"text/template"
@@ -29,27 +28,4 @@ func GetEnvWithDefault(name string, defaultValue string) string {
 		return defaultValue
 	}
 	return value
-}
-func PrepareTemplate(files embed.FS, fileglob []string, varname string) (*template.Template, error) {
-	filename := GetEnvWithDefault(varname, fileglob[0])
-	tmpl, err := PrepareFileTemplate(filename)
-	if err == nil {
-		return tmpl, err
-	}
-	tmpl, err = PrepareEmbeddedTemplate(files, fileglob)
-	return tmpl, err
-
-}
-func RenderTemplate(outStream io.Writer, files embed.FS, fileglob []string, varname string, data map[string]interface{}) bool {
-	tmpl, err := PrepareTemplate(files, fileglob, varname)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "RenderTemplate() error: %v\n", err)
-		return false
-	}
-	err = tmpl.Execute(outStream, data)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return false
-	}
-	return true
 }

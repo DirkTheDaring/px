@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
 	"px/configmap"
 	"px/ignition"
@@ -572,22 +571,6 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	_, found := configmap.GetString(spec, "name")
 	if !found {
 		spec["name"] = "vm" + strconv.Itoa(vmid)
-	}
-
-	sshkeys_unescaped, found := configmap.GetString(spec, "sshkeys")
-	if found {
-		// Absolute QUIRK to satisfy proxmox API
-		//sshkeys_escaped := shared.UrlEncode(sshkeys_unescaped, true)
-		sshkeys_escaped := url.PathEscape(sshkeys_unescaped)
-		sshkeys_escaped = strings.Replace(sshkeys_escaped, "@", "%40", -1)
-		sshkeys_escaped = strings.Replace(sshkeys_escaped, "+", "%2B", -1)
-		sshkeys_escaped = strings.Replace(sshkeys_escaped, "=", "%3D", -1)
-
-		//sshkeys_escaped = strings.Replace(sshkeys_escaped, ".", "%2E", -1)
-		//sshkeys_escaped := sshkeys_unescaped
-		//fmt.Fprintf(os.Stderr, "sshkeys old: %v\n", sshkeys_unescaped)
-		//fmt.Fprintf(os.Stderr, "sshkeys new: %v\n", sshkeys_escaped)
-		spec["sshkeys"] = sshkeys_escaped
 	}
 
 	//fmt.Fprintf(os.Stderr, "vmid: %v name: %v\n", vmid, result["name"])

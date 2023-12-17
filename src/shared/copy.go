@@ -8,6 +8,8 @@ import (
 	"strings"
 	"github.com/DirkTheDaring/px-api-client-go"
 	"github.com/DirkTheDaring/px-api-client-internal-go"
+	"errors"
+	"net/url"
 
 )
 
@@ -48,134 +50,194 @@ func PtrToString(val reflect.Value, boolValues []string) (string, bool) {
 }
 
 
-// flatten converts a struct to a string representation.
-// It processes each field of the struct and concatenates their json tag names
-// and values into a comma-separated string.
+// getJSONTag extracts the JSON tag name from the struct field.
+func getJSONTag(fieldType reflect.StructField) string {
+    tagParts := strings.Split(fieldType.Tag.Get("json"), ",")
+    return tagParts[0]
+}
+
+// isSupportedKind checks if the field kind is supported for flattening.
+func isSupportedKind(kind reflect.Kind) bool {
+    return kind == reflect.Ptr || kind == reflect.String || kind == reflect.Bool
+}
+
+// formatField returns the string representation of the field.
+func formatField(field reflect.Value, tagName string) (string, error) {
+    switch field.Kind() {
+    case reflect.Ptr:
+        if value, ok := PtrToString(field, nil); ok {
+            return tagName + "=" + value, nil
+        }
+    case reflect.String:
+        return tagName + "=" + field.String(),  nil
+    case reflect.Bool:
+        if field.Bool() {
+            return tagName + "=1", nil
+        }
+        return tagName + "=0", nil
+    }
+    msg := fmt.Sprintf("Wrong kind: %+v\n", field.Kind())
+    myError := errors.New(msg)
+    return "", myError
+}
+
+// flatten converts a struct to a string representation, concatenating json tag names and values.
 func flatten(v reflect.Value) string {
+    var result strings.Builder
+    for i := 0; i < v.NumField(); i++ {
+        field := v.Field(i)
+        jsonTag := getJSONTag(v.Type().Field(i))
 
-	if v.Kind() != reflect.Struct {
-		return ""
+        if jsonTag == "" || !isSupportedKind(field.Kind()) {
+            continue
+        }
+
+	str, err := formatField(field, jsonTag)
+	if err != nil {
+		continue
 	}
+	if result.Len() > 0 {
+		result.WriteString(",")
+        }
+        result.WriteString(str)
+    }
 
-	var result strings.Builder
-	//fmt.Printf("number of fields: %+v\n", v.NumField())
+    str := result.String()
 
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		fieldType := v.Type().Field(i)
-		tagName := strings.Split(fieldType.Tag.Get("json"), ",")[0]
+    return str
+}
 
-		if tagName == "" {
-			//fmt.Printf("no tagname\n")
+// copyGeneral copies fields from src to dst, handling different field types.
+func copyGeneral(dst, src interface{}) {
+
+    srcVal := reflect.ValueOf(src).Elem()
+    dstVal := reflect.ValueOf(dst).Elem()
+
+    for i := 0; i < srcVal.NumField(); i++ {
+        srcField, dstField := srcVal.Type().Field(i), dstVal.Type().Field(i)
+        if !fieldHasValue(reflect.ValueOf(src), srcField.Name) {
+            continue
+        }
+        copyField(reflect.ValueOf(src), reflect.ValueOf(dst), srcField, dstField)
+
+    }
+}
+
+// fieldHasValue checks if the field has a value set using the "Has" method.
+func fieldHasValue(obj reflect.Value, fieldName string) bool {
+    method := obj.MethodByName("Has" + fieldName)
+    if method.IsValid() {
+	    return method.Call(nil)[0].Bool()
+    }
+    return true
+}
+
+// copyField copies a field from src to dst, considering type conversions.
+func copyField(src, dst reflect.Value, srcField, dstField reflect.StructField) {
+    result := src.MethodByName("Get" + srcField.Name).Call(nil)
+    if srcField.Type == dstField.Type {
+        dst.MethodByName("Set" + srcField.Name).Call(result)
+    } else {
+        val,err := handleTypeConversion(result[0])
+	if err != nil {
+		return
+	}
+	dst.MethodByName("Set" + srcField.Name).Call([]reflect.Value{reflect.ValueOf(val)})
+
+    }
+}
+
+// handleTypeConversion handles type conversion for field values.
+func handleTypeConversion(value reflect.Value) (interface{}, error) {
+    switch value.Kind() {
+    case reflect.Bool:
+        if value.Bool() {
+            return int32(1),nil
+        }
+        return int32(0),nil
+    case reflect.Int64, reflect.Int32:
+	// FIXME not sure if this right
+	var val int64 = value.Int()
+	return  []reflect.Value{reflect.ValueOf(val)},nil
+    case reflect.Struct:
+	    return flatten(value),nil
+    default:
+        return nil, fmt.Errorf("unsupported kind: %s", value.Kind()) 
+    }
+}
+
+func dumpDest(dst any) {
+	dstVal := reflect.ValueOf(dst).Elem()
+	for i := 0; i < dstVal.NumField(); i++ {
+		dstField := dstVal.Type().Field(i)
+		if !fieldHasValue(reflect.ValueOf(dst), dstField.Name) {
 			continue
 		}
+		result := reflect.ValueOf(dst).MethodByName("Get" + dstField.Name).Call(nil)
 
+		name := strings.ToLower(dstField.Name)
 
-		element := ""
-		//fmt.Printf("field kind: %v\n", field.Kind())
-		switch field.Kind() {
-		case reflect.Ptr:
-			value, ok := PtrToString(field, nil)
-			if !ok {
-				continue
-			}
-			element = tagName + "=" + value
-
+		switch result[0].Kind() {
 		case reflect.String:
-			element = tagName + "=" + field.String()
-
-		case reflect.Bool:
-			if field.Bool() {
-				element = tagName + "=1"
-			} else {
-				element = tagName + "=0"
-			}
+			fmt.Fprintf(os.Stderr, "%s: %s\n", name, result[0])
+		case reflect.Int64, reflect.Int32:
+			fmt.Fprintf(os.Stderr, "%s: %v\n", name, result[0])
 		default:
-			//fmt.Printf("type not found: %v\n", field.Kind())
+			fmt.Fprintf(os.Stderr, "%s: %v (default)\n", name, result[0])
+		}
+	}
+}
+func containsString(slice []string, str string) bool {
+    for _, item := range slice {
+        if item == str {
+            return true
+        }
+    }
+    return false
+}
+
+// escape additional chars, which perl on the server side of proxmox cannot handle
+func postProcessFieldsForEscaping(dst any, slice []string) {
+	dstVal := reflect.ValueOf(dst).Elem()
+	for i := 0; i < dstVal.NumField(); i++ {
+		dstField := dstVal.Type().Field(i)
+		if !fieldHasValue(reflect.ValueOf(dst), dstField.Name) {
 			continue
-		
+		}
+		name := strings.ToLower(dstField.Name)
+		if !containsString(slice, name)  {
+			continue
 		}
 
-		if i > 0 {
-			result.WriteString(",")
-		}
-		result.WriteString(element)
-
-
-	}
-
-	return result.String()
-}
-
-
-
-// https://pkg.go.dev/reflect#Zero
-func copyGeneral(dst interface{}, src interface{}) {
-
-	src_p := reflect.ValueOf(src)
-	dst_p := reflect.ValueOf(dst)
-
-	src_e := src_p.Elem()
-	dst_e := dst_p.Elem()
-
-	for i := 0; i < src_e.NumField(); i++ {
-		src_field := src_e.Type().Field(i)
-		dst_field := dst_e.Type().Field(i)
-
-		method := src_p.MethodByName("Has" + src_field.Name)
-
-		// Skip all valid methods which do not have a value set
-		if method.IsValid() {
-			hasValue := method.Call([]reflect.Value{})
-			if !hasValue[0].Bool() {
-				continue
-			}
-		}
-		result := src_p.MethodByName("Get" + src_field.Name).Call(nil)
-
-		if src_field.Type == dst_field.Type {
-			//fmt.Printf("KEY %+v\n", src_field.Name)
-			//fmt.Printf("VAL %+v\n", result)
-			dst_p.MethodByName("Set" + src_field.Name).Call(result)
-		} else {
-
-			//fmt.Printf("XXX_KEY %+v\n", src_field.Name)
-			//fmt.Printf("XXX_VAL %+v\n", result[0].Kind())
-
-			if result[0].Kind() == reflect.Bool {
-				var val int32 = 0
-				if result[0].Bool() {
-					val = 1
-				} else {
-					val = 0
-				}
-
-				//fmt.Printf("YYY_VAL %+v\n", val)
-				params := []reflect.Value{reflect.ValueOf(val)}
-				dst_p.MethodByName("Set" + src_field.Name).Call(params)
-			} else if result[0].Kind() == reflect.Int64 || result[0].Kind() == reflect.Int32 {
-				var val int64 =  result[0].Int()
-				params := []reflect.Value{reflect.ValueOf(val)}
-				dst_p.MethodByName("Set" + src_field.Name).Call(params)
-			} else {
-				val := flatten(result[0])
-				params := []reflect.Value{reflect.ValueOf(val)}
-				dst_p.MethodByName("Set" + src_field.Name).Call(params)
-			}
-			//fmt.Printf("VAL %+v\n", result[0].CanInterface())
-			//fmt.Printf("VAL %+v\n", result[0].Interface())
-
-		}
-
+		result := reflect.ValueOf(dst).MethodByName("Get" + dstField.Name).Call(nil)
+		// Absolute QUIRK to satisfy proxmox API
+		unescaped := result[0].String()
+		escaped := url.PathEscape(unescaped)
+		escaped = strings.Replace(escaped, "@", "%40", -1)
+		escaped = strings.Replace(escaped, "+", "%2B", -1)
+		escaped = strings.Replace(escaped, "=", "%3D", -1)
+		//fmt.Fprintf(os.Stderr, "BEFORE %s: %s\n", name, unescaped)
+		//fmt.Fprintf(os.Stderr, "AFTER  %s: %s\n", name, escaped)
+		reflect.ValueOf(dst).MethodByName("Set" + dstField.Name).Call([]reflect.Value{reflect.ValueOf(escaped)})
 	}
 }
+
 func CopyVM(dst *pxapiflat.CreateVMRequest, src *pxapiobject.CreateVMRequest) {
 	copyGeneral(dst, src)
+	// postproces the fields that need extra conversion (ssh)
+	rottenFields := []string{"sshkeys"}
+	postProcessFieldsForEscaping(dst, rottenFields)
+	// FIXME add a debug dump function
+	//dumpDest(dst)
 }
 func CopyContainer(dst *pxapiflat.CreateContainerRequest, src *pxapiobject.CreateContainerRequest) {
 	copyGeneral(dst, src)
+	rottenFields := []string{"ssh-public-keys"}
+	postProcessFieldsForEscaping(dst, rottenFields)
 }
 
 func CopyUpdateVMConfigRequest(dst *pxapiflat.UpdateVMConfigRequest, src *pxapiobject.UpdateVMConfigRequest) {
 	copyGeneral(dst, src)
+	rottenFields := []string{"sshkeys"}
+	postProcessFieldsForEscaping(dst, rottenFields)
 }
