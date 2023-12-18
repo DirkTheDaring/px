@@ -543,7 +543,7 @@ func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest *pxapiflat.Up
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 		return nil, err
 	}
-	fmt.Fprintf(os.Stdout, "Response from `NodesApi.UpdateVMConfig`: %s\n", *resp.Data)
+	//fmt.Fprintf(os.Stdout, "Response from `NodesApi.UpdateVMConfig`: %s\n", *resp.Data)
 	return resp, err
 }
 
@@ -1051,7 +1051,7 @@ func UpdateContainerConfigSync(node string, vmid int64, updateContainerConfigSyn
 		return nil, err
 	}
 	// response from `UpdateContainerConfigSync`: CreateVM200Response
-	fmt.Fprintf(os.Stdout, "Response from `NodesApi.UpdateContainerConfigSync`: %v\n", resp)
+	//fmt.Fprintf(os.Stdout, "Response from `NodesApi.UpdateContainerConfigSync`: %v\n", resp)
 	return resp, err
 }
 
@@ -1093,6 +1093,6 @@ func GetNodeTaskStatus(node string, upid string) (*pxapiflat.GetNodeTaskStatus20
 	}
 	// fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	// response from `GetNodeTaskStatus`: GetNodeTaskStatus200Response
-	fmt.Fprintf(os.Stdout, "Response from `NodesApi.GetNodeTaskStatus`: %v\n", resp)
+	//fmt.Fprintf(os.Stdout, "Response from `NodesApi.GetNodeTaskStatus`: %v\n", resp)
 	return resp, err
 }
