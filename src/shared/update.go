@@ -62,8 +62,9 @@ func Update(match string, settings []string) {
 				if !strings.HasPrefix(value, filterString) {
 					continue
 				}
-				vmid,_ := configmap.GetInt(output, "vmid")
-				node,_ := configmap.GetString(output, "node")
+				vmid,_  := configmap.GetInt(output, "vmid")
+				node,_  := configmap.GetString(output, "node")
+				_type,_ := configmap.GetString(output, "type")
 
 				jsonData, err := json.Marshal(myDict)
 				if err != nil {
@@ -71,24 +72,41 @@ func Update(match string, settings []string) {
 				}
 				//fmt.Println(string(jsonData))
 
-				
-				updateVMConfigRequestObject := pxapiobject.UpdateVMConfigRequest{}
-				err = json.Unmarshal(jsonData, &updateVMConfigRequestObject)
-				jsonData, err = json.Marshal(updateVMConfigRequestObject)
-				//fmt.Println(string(jsonData))
+				if _type == "qemu" {
+					updateVMConfigRequestObject := pxapiobject.UpdateVMConfigRequest{}
+					err = json.Unmarshal(jsonData, &updateVMConfigRequestObject)
+					jsonData, err = json.Marshal(updateVMConfigRequestObject)
+					//fmt.Println(string(jsonData))
+					updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
+					CopyUpdateVMConfigRequest(&updateVMConfigRequest, &updateVMConfigRequestObject)
+					resp, _ := UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
+					upid := resp.GetData()
+					//fmt.Fprintf(os.Stderr, "upid = %s\n", upid)
+					//shared.GetNodeTaskStatus(node, upid)
+					WaitForUPID(node,upid) 
+				} else {
+					updateContainerConfigSyncRequestObject := pxapiobject.UpdateContainerConfigSyncRequest{}
+					err = json.Unmarshal(jsonData, &updateContainerConfigSyncRequestObject)
+					jsonData, err = json.Marshal(updateContainerConfigSyncRequestObject)
+					fmt.Println(string(jsonData))
 
-				updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
+					updateContainerConfigSyncRequest := pxapiflat.UpdateContainerConfigSyncRequest{}
 
-				CopyUpdateVMConfigRequest(&updateVMConfigRequest, &updateVMConfigRequestObject)
+					CopyUpdateContainerConfigSyncRequest(&updateContainerConfigSyncRequest, &updateContainerConfigSyncRequestObject)
 
-				resp, err := UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
+					UpdateContainerConfigSync(node, int64(vmid), updateContainerConfigSyncRequest)
+					/*
+					updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
+					CopyUpdateVMConfigRequest(&updateVMConfigRequest, &updateVMConfigRequestObject)
+					resp, _ := UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
+					upid := resp.GetData()
+					*/
+					//fmt.Fprintf(os.Stderr, "upid = %s\n", upid)
+					//shared.GetNodeTaskStatus(node, upid)
 
-				upid := resp.GetData()
-				fmt.Fprintf(os.Stderr, "upid = %s\n", upid)
+					//WaitForUPID(node,upid) 
 
-				//shared.GetNodeTaskStatus(node, upid)
-				WaitForUPID(node,upid)
-
+				}
 			}
 
 		}

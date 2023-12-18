@@ -244,3 +244,12 @@ func CopyUpdateVMConfigRequest(dst *pxapiflat.UpdateVMConfigRequest, src *pxapio
 	jsonData, _ := json.Marshal(dst)
 	fmt.Println(string(jsonData))
 }
+
+func CopyUpdateContainerConfigSyncRequest(dst *pxapiflat.UpdateContainerConfigSyncRequest, src *pxapiobject.UpdateContainerConfigSyncRequest) {
+	copyGeneral(dst, src)
+	rottenFields := []string{"sshkeys"}
+	postProcessFieldsForEscaping(dst, rottenFields)
+	jsonData, _ := json.Marshal(dst)
+	fmt.Println(string(jsonData))
+}
+
