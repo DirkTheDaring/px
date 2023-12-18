@@ -146,9 +146,20 @@ func getSubset(filterString string, machine_type string) []map[string]interface{
 
 func Update(match string, settings []string) {
 
+	qemu_list := getSubset(match, "qemu")
+	if len(qemu_list) != 0 {
+		UpdateQemu(qemu_list, settings)
+	}
 
-	machines := getSubset(match, "qemu")
+	lxc_list  := getSubset(match, "lxc")
+	if len(lxc_list) != 0 {
+		UpdateLxc(lxc_list, settings)
+	}
+	os.Exit(0)
+}
 
+
+func UpdateQemu(machines []map[string]interface{}, settings []string) {
 
 	updateVMConfigRequestObject := pxapiobject.UpdateVMConfigRequest{}
 	attributeTypeDict := getAttributeTypeDict(&updateVMConfigRequestObject)
@@ -161,7 +172,6 @@ func Update(match string, settings []string) {
 	}
 	err = json.Unmarshal(jsonData, &updateVMConfigRequestObject)
 	//fmt.Println(string(jsonData))
-
 
 	for _, machine := range machines {
 		vmid,_  := configmap.GetInt(machine, "vmid")
@@ -177,24 +187,21 @@ func Update(match string, settings []string) {
 		//shared.GetNodeTaskStatus(node, upid)
 		WaitForUPID(node,upid)
 	}
+}
 
+func UpdateLxc(machines []map[string]interface{}, settings []string) {
 
-	machines = getSubset(match, "lxc")
-	if len(machines) == 0 {
-		os.Exit(0)
-	}
 	updateContainerConfigSyncRequestObject := pxapiobject.UpdateContainerConfigSyncRequest{}
-	attributeTypeDict = getAttributeTypeDict(&updateContainerConfigSyncRequestObject)
-	myDict = processSettings(settings, attributeTypeDict)
+	attributeTypeDict := getAttributeTypeDict(&updateContainerConfigSyncRequestObject)
+	myDict := processSettings(settings, attributeTypeDict)
 
-	jsonData, err = json.Marshal(myDict)
+	jsonData, err := json.Marshal(myDict)
 	if err != nil {
 		log.Fatalf("Error occurred during marshaling. Error: %s", err.Error())
 	}
 	err = json.Unmarshal(jsonData, &updateContainerConfigSyncRequestObject)
 	jsonData, err = json.Marshal(updateContainerConfigSyncRequestObject)
 	//fmt.Println(string(jsonData))
-
 
 	for _, machine := range machines {
 		vmid,_  := configmap.GetInt(machine, "vmid")
@@ -206,6 +213,4 @@ func Update(match string, settings []string) {
 		CopyUpdateContainerConfigSyncRequest(&updateContainerConfigSyncRequest, &updateContainerConfigSyncRequestObject)
 		UpdateContainerConfigSync(node, int64(vmid), updateContainerConfigSyncRequest)
 	}
-
-	os.Exit(0)
 }
