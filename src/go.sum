@@ -50,6 +50,8 @@ github.com/DirkTheDaring/px-api-client-go v1.0.8 h1:lud2Sx7QPIsdgYPtf8Qr/p9L83P+
 github.com/DirkTheDaring/px-api-client-go v1.0.8/go.mod h1:ooU42A6dDKqjPmQFFIQBpa/dWu/iZrQiw/9g7lo7vBI=
 github.com/DirkTheDaring/px-api-client-go v1.0.9 h1:YcrVENCk/LBmEHE1psxY/u6JQhtjp7f8fKrOEp1hmO8=
 github.com/DirkTheDaring/px-api-client-go v1.0.9/go.mod h1:ooU42A6dDKqjPmQFFIQBpa/dWu/iZrQiw/9g7lo7vBI=
+github.com/DirkTheDaring/px-api-client-go v1.0.12 h1:mJrmnjh0jTLVG434shnfRS9miI5LmgePk8WEKmECuXU=
+github.com/DirkTheDaring/px-api-client-go v1.0.12/go.mod h1:ooU42A6dDKqjPmQFFIQBpa/dWu/iZrQiw/9g7lo7vBI=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.4 h1:R923i3PsRVlPY64TBHKjx8UZg4rMwyn+CiSm1HXJTJs=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.4/go.mod h1:pBrlV23uYis/ucCLQ/JUrwyDdnv6kx6FM4E4cWyCiNE=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.5 h1:Lm9m1MmgQBv+hM4dEdEeVRMVT/SP1xVfW0bSZ8/xSCs=
@@ -76,6 +78,8 @@ github.com/DirkTheDaring/px-api-client-internal-go v1.0.15 h1:vctgl4bSDG8WvdjQxM
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.15/go.mod h1:pBrlV23uYis/ucCLQ/JUrwyDdnv6kx6FM4E4cWyCiNE=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.16 h1:oYo62Rd4uDW6eS5z6TWCk7v7j6t6ltTpEu86Fo4+LZg=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.16/go.mod h1:pBrlV23uYis/ucCLQ/JUrwyDdnv6kx6FM4E4cWyCiNE=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.17 h1:F5AAmwoo0QHIQiSIN5xRygPIdCkE+w17SFCpBl6rJIc=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.17/go.mod h1:pBrlV23uYis/ucCLQ/JUrwyDdnv6kx6FM4E4cWyCiNE=
 github.com/alecthomas/kong v0.6.1 h1:1kNhcFepkR+HmasQpbiKDLylIL8yh5B5y1zPp5bJimA=
 github.com/alecthomas/kong v0.6.1/go.mod h1:JfHWDzLmbh/puW6I3V7uWenoh56YNVONW+w8eKeUr9I=
 github.com/alecthomas/repr v0.0.0-20210801044451-80ca428c5142 h1:8Uy0oSf5co/NZXje7U1z8Mpep++QJOldL2hs/sBQf48=

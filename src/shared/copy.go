@@ -10,6 +10,7 @@ import (
 	"github.com/DirkTheDaring/px-api-client-internal-go"
 	"errors"
 	"net/url"
+	"encoding/json"
 
 )
 
@@ -240,4 +241,6 @@ func CopyUpdateVMConfigRequest(dst *pxapiflat.UpdateVMConfigRequest, src *pxapio
 	copyGeneral(dst, src)
 	rottenFields := []string{"sshkeys"}
 	postProcessFieldsForEscaping(dst, rottenFields)
+	jsonData, _ := json.Marshal(dst)
+	fmt.Println(string(jsonData))
 }

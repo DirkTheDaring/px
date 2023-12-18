@@ -3,8 +3,8 @@ module px
 go 1.18
 
 require (
-	github.com/DirkTheDaring/px-api-client-go v1.0.9
-	github.com/DirkTheDaring/px-api-client-internal-go v1.0.16
+	github.com/DirkTheDaring/px-api-client-go v1.0.12
+	github.com/DirkTheDaring/px-api-client-internal-go v1.0.17
 	github.com/alecthomas/kong v0.6.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.1
