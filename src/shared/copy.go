@@ -197,6 +197,17 @@ func containsString(slice []string, str string) bool {
     return false
 }
 
+// Absolute QUIRK to satisfy proxmox API
+func escapeForProxmoxPerl(input string) string {
+	escaped := url.PathEscape(input)
+	escaped = strings.Replace(escaped, "@", "%40", -1)
+	escaped = strings.Replace(escaped, "+", "%2B", -1)
+	escaped = strings.Replace(escaped, "=", "%3D", -1)
+	//fmt.Fprintf(os.Stderr, "BEFORE: %s\n", input)
+	//fmt.Fprintf(os.Stderr, "AFTER : %s\n", escaped)
+	return escaped
+}
+
 // escape additional chars, which perl on the server side of proxmox cannot handle
 func postProcessFieldsForEscaping(dst any, slice []string) {
 	dstVal := reflect.ValueOf(dst).Elem()
@@ -209,16 +220,8 @@ func postProcessFieldsForEscaping(dst any, slice []string) {
 		if !containsString(slice, name)  {
 			continue
 		}
-
 		result := reflect.ValueOf(dst).MethodByName("Get" + dstField.Name).Call(nil)
-		// Absolute QUIRK to satisfy proxmox API
-		unescaped := result[0].String()
-		escaped := url.PathEscape(unescaped)
-		escaped = strings.Replace(escaped, "@", "%40", -1)
-		escaped = strings.Replace(escaped, "+", "%2B", -1)
-		escaped = strings.Replace(escaped, "=", "%3D", -1)
-		//fmt.Fprintf(os.Stderr, "BEFORE %s: %s\n", name, unescaped)
-		//fmt.Fprintf(os.Stderr, "AFTER  %s: %s\n", name, escaped)
+		escaped := escapeForProxmoxPerl(result[0].String())
 		reflect.ValueOf(dst).MethodByName("Set" + dstField.Name).Call([]reflect.Value{reflect.ValueOf(escaped)})
 	}
 }
