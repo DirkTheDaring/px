@@ -144,22 +144,31 @@ func getSubset(filterString string, machine_type string) []map[string]interface{
 }
 
 
-func Update(match string, settings []string) {
+func Apply(match string, settings []string) {
+
+	if match == "" {
+		fmt.Fprintf(os.Stdout, "you must set --match not to an empty string.\n")
+		os.Exit(1)
+	}
+	if len(settings) == 0{
+		fmt.Fprintf(os.Stdout, "no settings given.\n")
+		os.Exit(1)
+	}
 
 	qemu_list := getSubset(match, "qemu")
 	if len(qemu_list) != 0 {
-		UpdateQemu(qemu_list, settings)
+		ApplyQemu(qemu_list, settings)
 	}
 
 	lxc_list  := getSubset(match, "lxc")
 	if len(lxc_list) != 0 {
-		UpdateLxc(lxc_list, settings)
+		ApplyLxc(lxc_list, settings)
 	}
 	os.Exit(0)
 }
 
 
-func UpdateQemu(machines []map[string]interface{}, settings []string) {
+func ApplyQemu(machines []map[string]interface{}, settings []string) {
 
 	updateVMConfigRequestObject := pxapiobject.UpdateVMConfigRequest{}
 	attributeTypeDict := getAttributeTypeDict(&updateVMConfigRequestObject)
@@ -177,7 +186,7 @@ func UpdateQemu(machines []map[string]interface{}, settings []string) {
 		vmid,_  := configmap.GetInt(machine, "vmid")
 		node,_  := configmap.GetString(machine, "node")
 
-		fmt.Fprintf(os.Stdout, "Update Virtual Machine %v on %s\n", vmid, node)
+		fmt.Fprintf(os.Stdout, "Apply Virtual Machine %v on %s\n", vmid, node)
 
 		updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
 		CopyUpdateVMConfigRequest(&updateVMConfigRequest, &updateVMConfigRequestObject)
@@ -189,7 +198,7 @@ func UpdateQemu(machines []map[string]interface{}, settings []string) {
 	}
 }
 
-func UpdateLxc(machines []map[string]interface{}, settings []string) {
+func ApplyLxc(machines []map[string]interface{}, settings []string) {
 
 	updateContainerConfigSyncRequestObject := pxapiobject.UpdateContainerConfigSyncRequest{}
 	attributeTypeDict := getAttributeTypeDict(&updateContainerConfigSyncRequestObject)
@@ -207,7 +216,7 @@ func UpdateLxc(machines []map[string]interface{}, settings []string) {
 		vmid,_  := configmap.GetInt(machine, "vmid")
 		node,_  := configmap.GetString(machine, "node")
 
-		fmt.Fprintf(os.Stdout, "Update Container %v on %s\n", vmid, node)
+		fmt.Fprintf(os.Stdout, "Apply Container %v on %s\n", vmid, node)
 
 		updateContainerConfigSyncRequest := pxapiflat.UpdateContainerConfigSyncRequest{}
 		CopyUpdateContainerConfigSyncRequest(&updateContainerConfigSyncRequest, &updateContainerConfigSyncRequestObject)
