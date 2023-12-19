@@ -276,47 +276,6 @@ func AddClusterResources(pxClients []shared.PxClient) []shared.PxClient {
 	return list
 }
 
-/*
-	func ProcessAliases(pxClients []shared.PxClient, nodes []map[string]interface{}) []shared.PxClient {
-		list := []shared.PxClient{}
-
-		for _, pxClient := range pxClients {
-			storageAliases := map[string]string{}
-			//fmt.Fprintf(os.Stderr, "%v\n", pxClient.Storage)
-			node := nodes[pxClient.OrigIndex]
-			aliases, _ := configmap.GetMapEntry(node, "aliases")
-			for aliasName, aliasValues := range aliases {
-				aliasValuesSlice, ok := aliasValues.([]interface{})
-				if !ok {
-					continue
-				}
-				for _, aliasValue := range aliasValuesSlice {
-					matchString := aliasValue.(string)
-					//fmt.Fprintf(os.Stderr, "%v %v %v\n", pxClient._OrigIndex, aliasName, aliasValue)
-					match := false
-					storageName := ""
-					for _, storage := range pxClient.Storage {
-						storageName, _ = configmap.GetString(storage, "storage")
-						match, _ = regexp.MatchString(matchString, storageName)
-						if match {
-							//fmt.Fprintf(os.Stderr, "!!%v == %v\n", storageName, aliasValue)
-							break
-						}
-					}
-					if match {
-						//fmt.Fprintf(os.Stderr, "Match %v %v %v\n", pxClient._OrigIndex, aliasName, storageName)
-						storageAliases[aliasName] = storageName
-						break
-					}
-				}
-			}
-			// THIS WRONG. AS ALIAS are on NODE BASIS not on pxClient Basis
-			pxClient.StorageAliases = storageAliases
-			list = append(list, pxClient)
-		}
-		return list
-	}
-*/
 func renderOnConsole(outputs []map[string]interface{}, headers []string, filterColumn string, filterString string) {
 
 	if len(headers) == 0 && len(outputs) > 0 {
