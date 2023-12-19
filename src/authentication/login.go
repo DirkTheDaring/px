@@ -73,31 +73,6 @@ func CreateContext(ticket string, csrfpreventiontoken string) context.Context {
 	return newContext
 }
 
-/*
-func LoginClusterNode(node map[string]interface{}, timeout time.Duration) shared.PxClient {
-
-	url, _ := configmap.GetString(node, "url")
-
-	username, _ := configmap.GetString(node, "username")
-	password, _ := configmap.GetString(node, "password")
-
-	insecureskipverify := configmap.GetBoolWithDefault(node, "insecureskipverify", false)
-
-	apiClient, ticket, csrfpreventiontoken, err := LoginNode(url, username, password, insecureskipverify, timeout)
-
-	if err != nil {
-		return nil
-	}
-
-	context := CreateContext(ticket, csrfpreventiontoken)
-	pxClient := shared.PxClient{}
-	pxClient.Context = context
-	pxClient.ApiClient = apiClient
-
-	return pxClient
-}
-*/
-
 func LoginClusterNodes(nodes []map[string]interface{}, timeout time.Duration) []shared.PxClient {
 	// Usually only one node per cluster is needed
 	// However especially in testlabs, the nodes might come and go and might
