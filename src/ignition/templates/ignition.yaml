@@ -108,15 +108,19 @@ storage:
 {{if .self.nameserver }}        dns={{ .self.nameserver }}{{end}}
 {{end}}
 {{if .self.ip6config0 }}
+{{if .self.ip6config0.ip }}
+{{if .self.ip6config0.gateway }}
         [ipv6]
         method=manual
         addr-gen-mode=default
         #address1=fd00::ab:cd:ef:1/64,fe80::3ea6:2fff:fe76:bf6d
-        address1={{ .self.ip6config0.ip }},{{ self.ip6config0.gateway }}
+        address1={{ .self.ip6config0.ip }},{{ .self.ip6config0.gateway }}
         #dns=fe80::3ea6:2fff:fe76:bf6d;
 {{if .self.ip6config0.nameserver }}        dns={{ .self.ip6config0.nameserver }}{{end}}
         #dns-search=fritz.box;office.kaupon.de;kaupon.de;
 {{if .self.ip6config0.dns_search }}        dns-search={{ .self.ip6config0.dns_search }}{{end}}
+{{end}}
+{{end}}
 {{end}}
 {{if .self.ipconfig1 }}
   - path: /etc/NetworkManager/system-connections/{{ .interface_name1 }}.nmconnection
@@ -126,10 +130,10 @@ storage:
         [connection]
         type=ethernet
         interface-name={{ .interface_name1 }}
-        
+
         [ethernet]
         mac-address={{ .self.net1.macaddr }}
-        
+
         [ipv4]
         method=manual
         addresses={{ .self.ipconfig1.ip }}
@@ -186,7 +190,7 @@ storage:
         # https://github.com/giantswarm/k8scloudconfig/blob/master/files/conf/hardening.conf#L4
         # Other sources:
         # https://gist.github.com/ntamvl/7c41acee650d376863fd940b99da836f
-        
+
         fs.inotify.max_user_watches=1048576
         fs.inotify.max_user_instances=1000000
   - path: /etc/zincati/config.d/config.toml
@@ -204,7 +208,7 @@ storage:
         # Created by ignition
 {{ range $index, $element := .persistent_modules }}        {{ $element }}
 {{ end }}
-{{ end }}   
+{{ end }}
 {{if ne (len .trees) 0 }}
   # search path for local is determined via commandlineswith --file-dir
   # butane cannot resolve synmlinks in the  --files-dir path, therefore
