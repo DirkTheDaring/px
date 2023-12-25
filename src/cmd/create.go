@@ -55,11 +55,10 @@ func init() {
 	// is called directly, e.g.:
 	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	//createCmd.Flags().BoolP("dump", "", false, "dump")
 	createCmd.Flags().StringSliceVarP(&createOptions.File, "from-file", "f", createOptions.File, "create from file")
 	createCmd.Flags().BoolVar(&createOptions.DryRun, "dry-run", false, "dry-run")
 	createCmd.Flags().BoolVar(&createOptions.Dump, "dump", false, "dump")
-	createCmd.Flags().BoolVar(&createOptions.Update, "update", false, "update")
+	createCmd.Flags().BoolVarP(&createOptions.Update, "update", "u", false, "update settings (cores, memory, disksize)")
 }
 
 // Complete loads data from the command line environment

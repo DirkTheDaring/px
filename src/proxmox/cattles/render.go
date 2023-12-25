@@ -95,7 +95,7 @@ func ProcessStorage(data map[string]interface{}, aliases map[string]string, stor
 		newFile := newStorageName + ":" + slice[1]
 
 		if newFile != file {
-			fmt.Fprintf(os.Stderr, "  %s: %s (%s: %s)\n", storageDrive, newFile, storageDrive, file)
+			fmt.Fprintf(os.Stderr, "  %s: map alias %s to %s\n", storageDrive, file, newFile)
 		}
 		storageData["file"] = newFile
 
