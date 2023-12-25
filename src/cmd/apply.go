@@ -66,6 +66,6 @@ func (o *ApplyOptions) Validate() error {
 
 func (o *ApplyOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
-	shared.Apply(applyOptions.Match, applyOptions.Set) 
+	shared.Apply(applyOptions.Match, applyOptions.Set)
 	return nil
 }

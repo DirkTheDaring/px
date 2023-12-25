@@ -113,6 +113,42 @@ func GetInt(data map[string]interface{}, name string) (int, bool) {
 
 	return 0, false
 }
+
+func GetInt64(data map[string]interface{}, name string) (int64, bool) {
+	value, ok := data[name]
+	if !ok {
+		//fmt.Fprintf(os.Stderr, "not found: %s\n", name)
+		return 0, false
+	}
+	//fmt.Fprintf(os.Stderr, "key = %s value: %v (%T)\n", name, value, value)
+
+	valueInt64, ok := value.(int64)
+	if ok {
+		return valueInt64, true
+	}
+
+	valueInt, ok := value.(int)
+	if ok {
+		return int64(valueInt), true
+	}
+
+	valueFloat64, ok := value.(float64)
+	if ok {
+		valueInt64 := int64(valueFloat64)
+		return valueInt64, true
+	}
+
+	valueStr, ok := value.(string)
+	valueInt64, err := strconv.ParseInt(valueStr, 10, 64)
+	if err == nil {
+		return valueInt64, true
+	}
+
+	//fmt.Fprintf(os.Stderr, "value to int64 failed: %s %v\n", name, err)
+	return 0, false
+}
+
+
 func GetBoolWithDefault(data map[string]interface{}, name string, defaultValue bool) bool {
 	value, ok := data[name]
 	if !ok {

@@ -13,6 +13,7 @@ type CreateOptions struct {
 	File   []string
 	DryRun bool
 	Dump   bool
+	Update bool
 }
 
 var createOptions = &CreateOptions{}
@@ -58,6 +59,7 @@ func init() {
 	createCmd.Flags().StringSliceVarP(&createOptions.File, "from-file", "f", createOptions.File, "create from file")
 	createCmd.Flags().BoolVar(&createOptions.DryRun, "dry-run", false, "dry-run")
 	createCmd.Flags().BoolVar(&createOptions.Dump, "dump", false, "dump")
+	createCmd.Flags().BoolVar(&createOptions.Update, "update", false, "update")
 }
 
 // Complete loads data from the command line environment

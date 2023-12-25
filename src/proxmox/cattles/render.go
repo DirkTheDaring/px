@@ -80,14 +80,14 @@ func ProcessStorage(data map[string]interface{}, aliases map[string]string, stor
 		if ok {
 			newStorageName = alias
 			if !query.In(storageNames, alias) {
-				fmt.Fprintf(os.Stderr, "storageName %s (alias %s) not found: %s\n",  storageName, alias, file)
+				fmt.Fprintf(os.Stderr, "  storageName %s (alias %s) not found: %s\n",  storageName, alias, file)
 				continue
 			}
 
 		} else {
 			newStorageName = storageName
 			if !query.In(storageNames, storageName) {
-				fmt.Fprintf(os.Stderr, "storageName %s not found: %s\n",  alias, file)
+				fmt.Fprintf(os.Stderr, "  storageName %s not found: %s\n",  alias, file)
 				continue
 			}
 		}
@@ -95,7 +95,7 @@ func ProcessStorage(data map[string]interface{}, aliases map[string]string, stor
 		newFile := newStorageName + ":" + slice[1]
 
 		if newFile != file {
-			fmt.Fprintf(os.Stderr, "%s: %s (%s: %s)\n", storageDrive, newFile, storageDrive, file)
+			fmt.Fprintf(os.Stderr, "  %s: %s (%s: %s)\n", storageDrive, newFile, storageDrive, file)
 		}
 		storageData["file"] = newFile
 

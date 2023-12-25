@@ -147,7 +147,8 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 	}
 	if strings.ToLower(kind) == "list" {
 
-		// Resolve List also inherits war data
+
+		// Resolve List also inherits var data
 		list := ResolveList(object)
 		//fmt.Fprintf(os.Stderr, "ProcessSection() list len:  %v\n", len(list))
 		for _, item := range list {
@@ -193,7 +194,8 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 				pxClient := shared.GlobalPxCluster.GetPxClient(node)
 				itemVars := configmap.GetMapEntryWithDefault(metadata, "vars", map[string]interface{}{})
 				vars := configmap.MergeMapRecursive(pxClient.Vars, itemVars)
-				CreateCT(spec, vars, createOptions.Dump, node, "small", false, createOptions.DryRun)
+				//fmt.Fprintf(os.Stderr, "DEBUG LXC: %v %v\n", kind, node)
+				CreateCT(spec, vars, createOptions.Dump, node, "small", false, createOptions.DryRun, createOptions.Update )
 			} else {
 				fmt.Fprintf(os.Stderr, "node does not exist: %v\n", node)
 			}
@@ -224,7 +226,7 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 				vars := configmap.MergeMapRecursive(pxClient.Vars, itemVars)
 				//proxmox.DumpJson(vars)
 				//fmt.Fprintf(os.Stderr, "---------------------\n")
-				CreateVM(spec, vars, createOptions.Dump, node, "small", createOptions.DryRun)
+				CreateVM(spec, vars, createOptions.Dump, node, "small", createOptions.DryRun, createOptions.Update)
 
 			} else {
 				fmt.Fprintf(os.Stderr, "node does not exist: %v\n", node)
@@ -302,7 +304,7 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 		//result := pxClient.ApiClient.NodesApi.GetVMConfig(pxClient.Context, node, int64(vmid))
 		//fmt.Fprintf(os.Stderr, "result = %v\n", result)
 
-	        
+
 		cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
 		if err != nil {
 			return
@@ -354,7 +356,7 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 			return
 		}
 		fmt.Fprintf(os.Stderr, "latestAndGreatest = %v\n", latestAndGreatest)
-		
+
 
                 newConfig := map[string]interface{}{}
 		storageData["import-from"] = latestAndGreatest
@@ -396,7 +398,7 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 		upid = res.GetData()
 		fmt.Fprintf(os.Stderr, "upid = %s\n", upid)
 		shared.WaitForUPID(node,upid)
-	
+
 		//fmt.Fprintf(os.Stderr, "%v %v\n", res, err)
                 //time.Sleep(2 * time.Second)
 		//shared.WaitForVMUnlock(node, int64(vmid))
@@ -405,7 +407,7 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 }
 
 func ProcessFiles(filenames []string, cmd string) {
-	fmt.Fprintf(os.Stderr, "ProcessFiles\n")
+	//fmt.Fprintf(os.Stderr, "ProcessFiles\n")
 	for _, filename := range filenames {
 		//fmt.Fprintf(os.Stderr, "ProcessFiles 1\n")
 		sections, err := shared.ReadYAMLWithDashDashDashSingle(filename)
@@ -423,6 +425,3 @@ func ProcessFiles(filenames []string, cmd string) {
 
 	}
 }
-
-
-

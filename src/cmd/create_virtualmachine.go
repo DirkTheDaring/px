@@ -38,6 +38,7 @@ type CreateVirtualmachineOptions struct {
 	DryRun     bool
 	Nameserver string
 	//Size   string
+	Update    bool
 }
 
 var createVirtualmachineOptions = &CreateVirtualmachineOptions{}
@@ -106,6 +107,7 @@ func init() {
 	createVirtualmachineCmd.Flags().StringVar(&createVirtualmachineOptions.Nameserver, "nameserver", "", "nameserver")
 
 	createVirtualmachineCmd.Flags().BoolVar(&createVirtualmachineOptions.DryRun, "dry-run", false, "dry-run")
+	createVirtualmachineCmd.Flags().BoolVar(&createVirtualmachineOptions.Update, "update", false, "update")
 
 	//createVirtualmachineCmd.Flags().StringVar(&createVirtualmachineOptions.Size, "size", "15G", "size")
 
@@ -410,24 +412,9 @@ func MapRootFs(machine map[string]interface{}, aliases map[string]string, storag
 	rootfs["volume"] = volume + ":" + slice[1]
 	machine["rootfs"] = rootfs
 	return machine
-
 }
 
-func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, createIgnition bool, dryRun bool) error {
-
-	aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
-	storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
-	cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
-	if err != nil {
-		return err
-	}
-	//SetImportFrom(cluster, machine)
-	SetOSTemplate(cluster, machine)
-
-	cattles.ProcessStorage(machine, aliases, storageNames)
-	machine = MapRootFs(machine, aliases, storageNames)
-	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
-
+func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, createIgnition bool, dryRun bool, doUpdate bool) error {
 	createCT := false
 
 	vmid := DetermineVmid(machine, "lxc")
@@ -448,14 +435,39 @@ func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump 
 			fmt.Fprintf(os.Stderr, "vmid: %v\n", vmid)
 		}
 	}
+
 	if vmid == 0 {
 		// Fixme fail if still 0
+		fmt.Fprintf(os.Stderr, "Could not create CT.\n")
+		return nil
 	}
+
+	if (!doUpdate && !createCT) {
+		//fmt.Fprintf(os.Stderr, "SKIP: VM %v %v %v %v\n", vmid, node,doUpdate, createVM)
+		fmt.Fprintf(os.Stderr, "SKIP: CT %v %v\n", vmid, node)
+		return nil
+	}
+
 	if createCT {
 		fmt.Fprintf(os.Stderr, "CREATE CT %v %v\n", vmid, node)
 	} else {
 		fmt.Fprintf(os.Stderr, "UPDATE CT %v %v\n", vmid, node)
 	}
+	aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
+	storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
+	cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
+	if err != nil {
+		return err
+	}
+	//SetImportFrom(cluster, machine)
+	SetOSTemplate(cluster, machine)
+
+	cattles.ProcessStorage(machine, aliases, storageNames)
+	machine = MapRootFs(machine, aliases, storageNames)
+	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
+
+
+
 	machine["vmid"] = vmid
 
 	_, found := configmap.GetString(machine, "hostname")
@@ -522,17 +534,7 @@ func HasIgnition(args []string) bool {
 	return false
 }
 
-func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, dryRun bool) error {
-	aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
-	//fmt.Fprintf(os.Stderr, "CreateVM() map=%v\n", shared.GlobalPxCluster.PxClientLookup)
-	//fmt.Fprintf(os.Stderr, "CreateVM() aliases=%v\n", aliases)
-	storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
-	cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
-	if err != nil {
-		return err
-	}
-	SetImportFrom(cluster, spec)
-	cattles.ProcessStorage(spec, aliases, storageNames)
+func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, dryRun bool, doUpdate bool) error {
 	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
 	var ok bool
 	createVM := false
@@ -557,6 +559,14 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	}
 	if vmid == 0 {
 		// Fixme fail if still 0
+		fmt.Fprintf(os.Stderr, "Could not create VM.\n")
+		return nil
+	}
+
+	if (!doUpdate && !createVM) {
+		//fmt.Fprintf(os.Stderr, "SKIP: VM %v %v %v %v\n", vmid, node,doUpdate, createVM)
+		fmt.Fprintf(os.Stderr, "SKIP: VM %v %v\n", vmid, node)
+		return nil
 	}
 	if createVM {
 		fmt.Fprintf(os.Stderr, "CREATE VM %v %v\n", vmid, node)
@@ -564,7 +574,20 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 		fmt.Fprintf(os.Stderr, "UPDATE VM %v %v\n", vmid, node)
 	}
 
-	//fmt.Fprintf(os.Stderr, "boot: %v\n", spec["boot"])
+	// Map Aliases to real drives
+	aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
+
+	//fmt.Fprintf(os.Stderr, "CreateVM() map=%v\n", shared.GlobalPxCluster.PxClientLookup)
+	//fmt.Fprintf(os.Stderr, "CreateVM() aliases=%v\n", aliases)
+	storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
+	cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
+	if err != nil {
+		return err
+	}
+	SetImportFrom(cluster, spec)
+
+	cattles.ProcessStorage(spec, aliases, storageNames)
+
 
 	spec["vmid"] = vmid
 
@@ -585,7 +608,7 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	args := ParseArgs(spec)
 	createIgnition := HasIgnition(args)
 
-	fmt.Fprintf(os.Stderr, "CreateVM() createIgnition: %v\n", createIgnition)
+	//fmt.Fprintf(os.Stderr, "CreateVM() createIgnition: %v\n", createIgnition)
 
 	if createIgnition {
 		//ignitionConfiguration["enabled"] = "true"
@@ -694,7 +717,7 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 		if dryRun {
 			goto skip
 		}
-		fmt.Fprintf(os.Stderr, "Upload %v %v\n", node, storage)
+		//fmt.Fprintf(os.Stderr, "Upload %v %v\n", node, storage)
 		f, _ := os.Open(ignitionFilename)
 		shared.Upload(node, storage, "iso", f)
 		f.Close()
@@ -725,7 +748,8 @@ skip:
 		}
 		//fmt.Fprintf(os.Stderr, "driveEntry: %v\n", driveEntry)
 
-		sizeStr, remainingDriveEntry := GetConfigOptionAndRemaining(driveEntry, "size")
+		//sizeStr, remainingDriveEntry := GetConfigOptionAndRemaining(driveEntry, "size")
+		sizeStr, _ := GetConfigOptionAndRemaining(driveEntry, "size")
 		//fmt.Fprintf(os.Stderr, "sizeStr: %v remainingDriveEntry: %v\n", sizeStr, remainingDriveEntry)
 
 		tmpArray := strings.Split(sizeStr, "=")
@@ -737,14 +761,37 @@ skip:
 			continue
 		}
 
+		//fmt.Fprintf(os.Stderr, "  %v %v (current)\n", shared.ToSizeString(sizeInBytes), shared.ToSizeString(currentSizeInBytes))
+
+
 		//fmt.Fprintf(os.Stderr, "currentSizeInBytes %v\n", currentSizeInBytes)
-		if currentSizeInBytes >= sizeInBytes {
+		if currentSizeInBytes > sizeInBytes {
+
+			fmt.Fprintf(os.Stderr, "  %s drive size configuration is smaller (%v) than current VM: %v\n", storageDrive, shared.ToSizeString(sizeInBytes), shared.ToSizeString(currentSizeInBytes))
+			//fmt.Fprintf(os.Stderr, "  storageDrive %s has size %v but running vm has: %v\n", storageDrive, sizeInBytes, currentSizeInBytes)
 			continue
 		}
+		if currentSizeInBytes < sizeInBytes {
+			delta_size := sizeInBytes - currentSizeInBytes
+			fmt.Fprintf(os.Stderr, "  %s increase size by %s to: %s\n", storageDrive, shared.ToSizeString(delta_size), shared.ToSizeString(sizeInBytes))
+
+			res, err := shared.ResizeVMDisk(node, int64(vmid), storageDrive, "+"+strconv.FormatInt(delta_size, 10))
+
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "  %v\n", err)
+			}
+			upid := res.GetData()
+			shared.WaitForUPID(node,upid)
+		}
+
+		//proxmox.DumpJson(vmConfigData)
+
+
 		//fmt.Fprintf(os.Stderr, "RESIZE: %v\n", storageDrive)
-		driveEntry = remainingDriveEntry + ",size=" + strconv.FormatInt(sizeInBytes, 10)
+		//driveEntry = remainingDriveEntry + ",size=" + strconv.FormatInt(sizeInBytes, 10)
 		//fmt.Fprintf(os.Stderr, "%v: %v\n", storageDrive, driveEntry)
-		if false {
+		/*
+		if true {
 			newConfig := map[string]interface{}{}
 			newConfig[storageDrive] = driveEntry
 			txt, _ := json.Marshal(newConfig)
@@ -755,14 +802,41 @@ skip:
 			}
 			updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
 			err = json.Unmarshal(txt, &updateVMConfigRequest)
-			//fmt.Fprintf(os.Stderr, "vmid: %v %v\n", uint64(vmid), updateVMConfigRequest.GetVirtio0())
-			shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
-			shared.WaitForVMUnlock(node, int64(vmid))
-		}
+			fmt.Fprintf(os.Stderr, "vmid: %v %v\n", uint64(vmid), updateVMConfigRequest.GetVirtio0())
+			continue
 
-		delta_size := sizeInBytes - currentSizeInBytes
-		shared.ResizeVMDisk(node, int64(vmid), storageDrive, "+"+strconv.FormatInt(delta_size, 10))
-		shared.WaitForVMUnlock(node, int64(vmid))
+			resp, err := shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "update vm config for %v on node %s error: %v\n", vmid, node, err)
+				continue
+			}
+			upid := resp.GetData()
+			shared.WaitForUPID(node,upid)
+
+			//shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
+			//shared.WaitForVMUnlock(node, int64(vmid))
+		}
+		*/
+
+	}
+	currentMemory, ok := configmap.GetInt64(vmConfigData, "memory")
+
+	if ok {
+		fmt.Fprintf(os.Stderr, "  current memory %v %T\n", currentMemory,currentMemory)
+		//proxmox.DumpJson(spec)
+		memory, _ := configmap.GetInt64(spec, "memory")
+		fmt.Fprintf(os.Stderr, "  memory %v %T\n", memory,memory)
+
+
+	}
+	balloon, ok := configmap.GetInt64(vmConfigData, "balloon")
+	if ok {
+		fmt.Fprintf(os.Stderr, "  balloon %v %T\n", balloon, balloon)
+	}
+
+	cores, ok := configmap.GetInt(vmConfigData, "cores")
+	if ok {
+		fmt.Fprintf(os.Stderr, "  cores %v %T\n", cores, cores)
 	}
 	return nil
 }
@@ -792,5 +866,5 @@ func (o *CreateVirtualmachineOptions) Run() error {
 		fmt.Fprintf(os.Stderr, "---\n")
 	}
 	vars := shared.GlobalPxCluster.GetPxClient(createVirtualmachineOptions.Node).Vars
-	return CreateVM(result, vars, createVirtualmachineOptions.Dump, createVirtualmachineOptions.Node, createVirtualmachineOptions.Cattle, createVirtualmachineOptions.DryRun)
+	return CreateVM(result, vars, createVirtualmachineOptions.Dump, createVirtualmachineOptions.Node, createVirtualmachineOptions.Cattle, createVirtualmachineOptions.DryRun, createVirtualmachineOptions.Update)
 }
