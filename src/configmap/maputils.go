@@ -114,6 +114,7 @@ func GetInt(data map[string]interface{}, name string) (int, bool) {
 	return 0, false
 }
 
+
 func GetInt64(data map[string]interface{}, name string) (int64, bool) {
 	value, ok := data[name]
 	if !ok {
@@ -146,6 +147,30 @@ func GetInt64(data map[string]interface{}, name string) (int64, bool) {
 
 	//fmt.Fprintf(os.Stderr, "value to int64 failed: %s %v\n", name, err)
 	return 0, false
+}
+func GetFloat64(data map[string]interface{}, name string) (float64, bool) {
+	value, ok := data[name]
+	if !ok {
+		return 0, false
+	}
+
+	valueFloat64, ok := value.(float64)
+	if ok {
+		return valueFloat64, true
+	}
+	return 0, false
+}
+
+func GetBool(data map[string]interface{}, name string) (bool, bool) {
+	value, ok := data[name]
+	if !ok {
+		return false, false
+	}
+	boolValue, ok := value.(bool)
+	if ok {
+		return boolValue,true
+	}
+	return false, false
 }
 
 

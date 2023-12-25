@@ -648,8 +648,10 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 
 	if createVM && !dryRun { // only on create
 		shared.CreateVM(node, vm2)
+		// FIXME no UPID???
 		shared.WaitForVMUnlock(node, int64(vmid))
 	}
+	// FIXME -- dry run
 	if dryRun {
 		return nil
 	}
@@ -780,6 +782,10 @@ skip:
 			delta_size := sizeInBytes - currentSizeInBytes
 			fmt.Fprintf(os.Stderr, "  %s increase size by %s to: %s\n", storageDrive, shared.ToSizeString(delta_size), shared.ToSizeString(sizeInBytes))
 
+			if dryRun {
+				continue
+			}
+
 			res, err := shared.ResizeVMDisk(node, int64(vmid), storageDrive, "+"+strconv.FormatInt(delta_size, 10))
 
 			if err != nil {
@@ -789,80 +795,9 @@ skip:
 			shared.WaitForUPID(node,upid)
 		}
 
-		//proxmox.DumpJson(vmConfigData)
-
-
-		//fmt.Fprintf(os.Stderr, "RESIZE: %v\n", storageDrive)
-		//driveEntry = remainingDriveEntry + ",size=" + strconv.FormatInt(sizeInBytes, 10)
-		//fmt.Fprintf(os.Stderr, "%v: %v\n", storageDrive, driveEntry)
-		/*
-		if true {
-			newConfig := map[string]interface{}{}
-			newConfig[storageDrive] = driveEntry
-			txt, _ := json.Marshal(newConfig)
-			if dump {
-				//fmt.Fprintf(os.Stderr, "---\n")
-				fmt.Fprintf(os.Stderr, "%v\n", string(txt))
-				//fmt.Fprintf(os.Stderr, "---\n")
-			}
-			updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
-			err = json.Unmarshal(txt, &updateVMConfigRequest)
-			fmt.Fprintf(os.Stderr, "vmid: %v %v\n", uint64(vmid), updateVMConfigRequest.GetVirtio0())
-			continue
-
-			resp, err := shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "update vm config for %v on node %s error: %v\n", vmid, node, err)
-				continue
-			}
-			upid := resp.GetData()
-			shared.WaitForUPID(node,upid)
-
-			//shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
-			//shared.WaitForVMUnlock(node, int64(vmid))
-		}
-		*/
-
 	}
 
-	newConfig := map[string]interface{}{}
-
-	currentMemory, ok := configmap.GetInt64(vmConfigData, "memory")
-
-	if ok {
-		//fmt.Fprintf(os.Stderr, "  current memory %v %T\n", currentMemory,currentMemory)
-		//proxmox.DumpJson(spec)
-		memory, ok := configmap.GetInt64(spec, "memory")
-		
-		//fmt.Fprintf(os.Stderr, "  memory %v %T\n", memory,memory)
-		if ok && currentMemory != memory {
-			//newConfig["memory"] = strconv.FormatInt(memory, 10)
-			newConfig["memory"] = memory
-		}
-
-
-	}
-	currentBalloon, ok := configmap.GetInt64(vmConfigData, "balloon")
-	if ok {
-		//fmt.Fprintf(os.Stderr, "  balloon %v %T\n", balloon, balloon)
-		balloon, ok := configmap.GetInt64(spec, "balloon")
-		if ok && currentBalloon != balloon {
-			//newConfig["balloon"] = strconv.FormatInt(balloon, 10)
-			newConfig["balloon"] = balloon
-
-		}
-
-	}
-
-	currentCores, ok := configmap.GetInt64(vmConfigData, "cores")
-	if ok {
-		//fmt.Fprintf(os.Stderr, "  cores %v %T\n", cores, cores)
-		cores, ok := configmap.GetInt64(spec, "cores")
-		if ok && currentCores != cores {
-			newConfig["cores"] = cores
-
-		}
-	}
+	newConfig := createChanges(vmConfigData,spec)
 	if len(newConfig) == 0 {
 		return nil
 	}
@@ -876,6 +811,9 @@ skip:
 		fmt.Fprintf(os.Stderr, "  update: %s\n", txt2)
 	}
 
+	if dryRun {
+		return nil
+	}
 	resp, err := shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
 
 	if err != nil {
@@ -887,6 +825,41 @@ skip:
 
 	return nil
 }
+
+// createChanges generates a new configuration based on the differences
+// between the existing vmConfigData and the desired spec.
+func createChanges(vmConfigData, spec map[string]interface{}) map[string]interface{} {
+    newConfig := make(map[string]interface{})
+
+    // Update configuration if there are changes.
+    updateConfig(newConfig, vmConfigData, spec, "memory")
+    updateConfig(newConfig, vmConfigData, spec, "balloon")
+    updateConfig(newConfig, vmConfigData, spec, "cores")
+    updateConfig(newConfig, vmConfigData, spec, "onboot")
+
+    return newConfig
+}
+
+// updateConfig checks and updates the configuration for a given key if needed.
+func updateConfig(newConfig, vmConfigData, spec map[string]interface{}, key string) {
+    if newValue, ok := configmap.GetInt64(spec, key); ok {
+        if currentValue, ok := configmap.GetInt64(vmConfigData, key); ok && currentValue != newValue {
+            newConfig[key] = newValue
+	    return
+        }
+    }
+    if newBoolValue, ok := configmap.GetBool(spec, key); ok {
+	var flag float64 = 0
+	if newBoolValue {
+		flag = 1
+	}
+        if currentValue, ok := configmap.GetFloat64(vmConfigData, key); ok && currentValue != flag {
+		newConfig[key] = flag
+
+	}
+    }
+}
+
 
 func (o *CreateVirtualmachineOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "CreateVirtualmachineOptions o: %v\n", o)
