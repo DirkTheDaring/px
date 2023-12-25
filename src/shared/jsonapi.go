@@ -19,3 +19,18 @@ func JSONGetVMConfig(node string, vmid int64) (map[string]interface{}, error) {
 	restResponse := ConvertJsonHttpResponseToMap(r)
 	return restResponse, nil
 }
+
+func JSONGetCTConfig(node string, vmid int64) (map[string]interface{}, error) {
+	_, apiClient, context, err := GetPxClient(node)
+	if err != nil {
+		return nil, err
+	}
+	_, r, err := apiClient.NodesAPI.GetContainerConfig(context, node, vmid).Execute()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetVMConfig``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+		return nil, err
+	}
+	restResponse := ConvertJsonHttpResponseToMap(r)
+	return restResponse, nil
+}

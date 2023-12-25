@@ -312,7 +312,7 @@ func SetOSTemplate(cluster map[string]interface{}, machine map[string]interface{
 	if !ok {
 		return
 	}
-	fmt.Printf("ostemplate %s\n", ostemplate)
+	//fmt.Printf("ostemplate %s\n", ostemplate)
 
 	var latestAndGreatest string
 	for _, storageLatestItem := range latestContent {
@@ -320,6 +320,9 @@ func SetOSTemplate(cluster map[string]interface{}, machine map[string]interface{
 		if ostemplate == label {
 			latestAndGreatest = storageLatestItem["volid"].(string)
 			machine["ostemplate"] = latestAndGreatest
+
+			fmt.Fprintf(os.Stderr, "  ostemplate: map alias %s to %s\n", ostemplate, latestAndGreatest)
+
 			return
 		}
 	}
@@ -490,10 +493,56 @@ func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump 
 
 	if createCT && !dryRun { // only on create
 		//fmt.Fprintf(os.Stderr, "%v\n", ct2)
-
-		shared.CreateContainer(node, ct2)
+                // FIXME wait for UPID?
+		res, err := shared.CreateContainer(node, ct2)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "createContainer error: %v\n", err)
+			return nil
+		}
+		upid := res.GetData()
+		shared.WaitForUPID(node,upid)
 		//shared.WaitForVMUnlock(node, int64(vmid))
 	}
+
+	if !doUpdate {
+		return nil
+	}
+	ctConfig, err := shared.JSONGetCTConfig(node,int64(vmid))
+	ctConfigData,_ := configmap.GetMapEntry(ctConfig, "data")
+
+	//fmt.Fprintf(os.Stderr, "ctConfig: %v %v\n", ctConfigData, err)
+
+	newConfig := createChanges(ctConfigData, machine)
+	// No changes
+	if len(newConfig) == 0 {
+		return nil
+	}
+
+	txt, _ := json.Marshal(newConfig)
+
+	//fmt.Fprintf(os.Stderr, "  update: %s\n", txt)
+
+	updateContainerConfigSyncRequest := pxapiflat.UpdateContainerConfigSyncRequest{}
+	err = json.Unmarshal(txt, &updateContainerConfigSyncRequest)
+	if true {
+		txt2,_ := json.Marshal(updateContainerConfigSyncRequest)
+		fmt.Fprintf(os.Stderr, "  update: %s\n", txt2)
+	}
+
+	if dryRun {
+		return nil
+	}
+
+	_, err = shared.UpdateContainerConfigSync(node, int64(vmid), updateContainerConfigSyncRequest)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "update container config for %v on node %s error: %v\n", vmid, node, err)
+		return nil
+	}
+	//upid := resp.GetData()
+	//shared.WaitForUPID(node,upid)
+
+
 
 	return nil
 }
