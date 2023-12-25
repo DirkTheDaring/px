@@ -408,7 +408,7 @@ func ProcessFiles(filenames []string, cmd string) {
 	fmt.Fprintf(os.Stderr, "ProcessFiles\n")
 	for _, filename := range filenames {
 		//fmt.Fprintf(os.Stderr, "ProcessFiles 1\n")
-		sections, err := shared.ReadYamlWithDashDashDashSingle(filename)
+		sections, err := shared.ReadYAMLWithDashDashDashSingle(filename)
 		//fmt.Fprintf(os.Stderr, "%v %v %v\n", filename, len(sections), err)
 		//fmt.Fprintf(os.Stderr, "ProcessFiles 2\n")
 		if err != nil {

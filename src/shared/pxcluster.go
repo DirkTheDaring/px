@@ -213,6 +213,6 @@ func (pxCluster PxCluster) GetAliasOnNode(node string) map[string]string {
 }
 
 func (pxCluster PxCluster) HasNode(node string) bool {
-	fmt.Fprintf(os.Stderr, "HasNode() %v %v\n", node, pxCluster.Nodes)
+	//fmt.Fprintf(os.Stderr, "HasNode() %v %v\n", node, pxCluster.Nodes)
 	return query.In(pxCluster.Nodes, node)
 }

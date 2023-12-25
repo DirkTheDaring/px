@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"px/authentication"
@@ -15,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"px/queries"
 
 	"github.com/spf13/cobra"
-	"github.com/DirkTheDaring/px-api-client-go"
 )
 
 /*
@@ -38,175 +37,12 @@ func DumpSystem(configData map[string]interface{}, clusterName string) {
 	fmt.Fprintf(os.Stdout, "%s\n", json)
 }
 
-func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	_, r, err := apiClient.ClusterAPI.GetClusterConfigNodes(context).Execute()
-	// {
-	//  "data": [
-	//    {
-	//      "name": "denue6pr248",
-	//      "node": "denue6pr248",
-	//      "nodeid": "7",
-	//      "quorum_votes": "1",
-	//      "ring0_addr": "172.16.0.26"
-	//    },
-	//    {
-	//      "name": "denue6pr095",
-	//      "node": "denue6pr095",
-	//      "nodeid": "4",
-	//      "quorum_votes": "1",
-	//      "ring0_addr": "172.16.0.22"
-	//    }
-	//  ]
-	//}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ClusterApi.GetClusterResources``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-		return nil
-	}
-	//resources := clusterResourcesResponse.GetData()
-	restResponse := shared.ConvertJsonHttpResponseToMap(r)
-	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
-	//json := configmap.DataToJSON(restResponse)
-	//fmt.Fprintf(os.Stdout, "%s\n", json)
-	return restResponse
-}
-func GetClusterNodes(pxClients []shared.PxClient) []shared.PxClient {
-	list := []shared.PxClient{}
-	for _, pxClient := range pxClients {
-		nodeList := []string{}
-		result := GetClusterConfigNodes(pxClient.ApiClient, pxClient.Context)
-		nodes, err := configmap.GetInterfaceSliceValue(result, "data")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "err: %v\n", err)
 
-			pxClient.Nodes = nodeList
-			continue
-		}
-		if len(nodes) > 0 {
-			for _, item := range nodes {
-				nodeName := item["node"].(string)
-				nodeList = append(nodeList, nodeName)
-			}
-			sort.Strings(nodeList)
-			pxClient.Nodes = nodeList
-		}
-		list = append(list, pxClient)
-	}
-	return list
-}
-
-func GetClusterResources(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	_, r, err := apiClient.ClusterAPI.GetClusterResources(context).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `ClusterApi.GetClusterResources``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-		return nil
-	}
-	//resources := clusterResourcesResponse.GetData()
-	restResponse := shared.ConvertJsonHttpResponseToMap(r)
-	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
-	//json := configmap.DataToJSON(restResponse)
-	//fmt.Fprintf(os.Stdout, "%s\n", json)
-	return restResponse
-}
-
-func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	//{
-	//  "data": [
-	//    {
-	//      "content": "rootdir,images",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "shared": 0,
-	//      "storage": "BALDUR1",
-	//      "type": "lvm",
-	//      "vgname": "BALDUR1"
-	//    },
-	//    {
-	//      "content": "iso,backup,images,snippets,vztmpl,rootdir",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "export": "/volume2/proxmox-shared",
-	//      "options": "vers=3,soft",
-	//      "path": "/mnt/pve/myshared",
-	//      "server": "192.168.178.249",
-	//      "shared": 1,
-	//      "storage": "myshared",
-	//      "type": "nfs"
-	//    },
-	//    {
-	//      "content": "images,rootdir",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "storage": "samsung-ssd-500GB",
-	//      "thinpool": "samsung-ssd-500GB",
-	//      "type": "lvmthin",
-	//      "vgname": "samsung-ssd-500GB"
-	//    },
-	//    {
-	//      "content": "backup,iso,vztmpl,images",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "path": "/var/lib/vz",
-	//      "storage": "local",
-	//      "type": "dir"
-	//    },
-	//    {
-	//      "content": "rootdir,images",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "storage": "local-lvm",
-	//      "thinpool": "data",
-	//      "type": "lvmthin",
-	//      "vgname": "pve"
-	//    },
-	//    {
-	//      "content": "rootdir,images",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "shared": 0,
-	//      "storage": "BALDUR2",
-	//      "type": "lvm",
-	//      "vgname": "BALDUR2"
-	//    },
-	//    {
-	//      "content": "iso",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "path": "/etc/pve/ignition",
-	//      "prune-backups": "keep-all=1",
-	//      "shared": 0,
-	//      "storage": "ignition",
-	//      "type": "dir"
-	//    },
-	//    {
-	//      "content": "images,vztmpl,snippets,rootdir,iso,backup",
-	//      "digest": "717a0a0cdefeb95b8de458fda15770dc4603253b",
-	//      "export": "/volume2/proxmox-shared",
-	//      "options": "vers=3,soft",
-	//      "path": "/mnt/pve/shared",
-	//      "server": "192.168.178.249",
-	//      "shared": 1,
-	//      "storage": "shared",
-	//      "type": "nfs"
-	//    }
-	//  ]
-	//}
-	_, r, err := apiClient.StorageAPI.GetStorage(context).Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `StorageApi.GetStorage``: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-		return nil
-	}
-	//resources := clusterResourcesResponse.GetData()
-	restResponse := shared.ConvertJsonHttpResponseToMap(r)
-	//fmt.Fprintf(os.Stderr, "resp: %v %v\n", len(resources), restResponse["data"])
-	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
-	//fmt.Fprintf(os.Stderr, "resp: %v\n", r)
-
-	//json := configmap.DataToJSON(restResponse)
-	//fmt.Fprintf(os.Stdout, "%s\n", json)
-
-	return restResponse
-}
 
 func AssignStorage(pxClients []shared.PxClient) []shared.PxClient {
 	list := []shared.PxClient{}
 	for _, pxClient := range pxClients {
-		storageResponse := GetStorage(pxClient.ApiClient, pxClient.Context)
+		storageResponse := queries.GetStorage(pxClient.ApiClient, pxClient.Context)
 		if storageResponse == nil {
 			continue
 		}
@@ -225,7 +61,7 @@ func AddClusterResources(pxClients []shared.PxClient) []shared.PxClient {
 		// there is also a type=="storage" in the answer, but it doesn't
 		// contain sufficient information (path missing) for the storage
 		// therefore this is not evaluated
-		clusterResources := GetClusterResources(pxClient.ApiClient, pxClient.Context)
+		clusterResources := queries.GetClusterResources(pxClient.ApiClient, pxClient.Context)
 		if clusterResources == nil {
 			continue
 		}
@@ -421,7 +257,7 @@ func initConfig() {
 		aliases := configmap.GetMapEntryWithDefault(nodeConfig, "aliases", map[string]interface{}{})
 		pxClient.Aliases = configmap.MergeMapRecursive(clusterAliases, aliases)
 
-		storageResponse := GetStorage(pxClient.ApiClient, pxClient.Context)
+		storageResponse := queries.GetStorage(pxClient.ApiClient, pxClient.Context)
 		if storageResponse == nil {
 			// FIXME
 			continue

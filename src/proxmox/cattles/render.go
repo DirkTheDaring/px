@@ -58,6 +58,8 @@ func PrepareEmbeddedTemplate(files embed.FS, fileglob []string, funcMap template
 }
 
 func ProcessStorage(data map[string]interface{}, aliases map[string]string, storageNames []string) map[string]interface{} {
+	//fmt.Fprintf(os.Stderr, "Aliases %v\n", aliases)
+
 	list := configmap.SelectKeys("^(virtio|scsi|ide|sata|efidisk|tpmstate)[0-9]+$", data)
 	for _, storageDrive := range list {
 		storageData, _ := configmap.GetMapEntry(data, storageDrive)
@@ -72,15 +74,31 @@ func ProcessStorage(data map[string]interface{}, aliases map[string]string, stor
 		}
 
 		storageName := slice[0]
+		var newStorageName string
+
 		alias, ok := aliases[storageName]
 		if ok {
-			file = alias
+			newStorageName = alias
+			if !query.In(storageNames, alias) {
+				fmt.Fprintf(os.Stderr, "storageName %s (alias %s) not found: %s\n",  storageName, alias, file)
+				continue
+			}
+
+		} else {
+			newStorageName = storageName
+			if !query.In(storageNames, storageName) {
+				fmt.Fprintf(os.Stderr, "storageName %s not found: %s\n",  alias, file)
+				continue
+			}
 		}
-		if !query.In(storageNames, file) {
-			fmt.Fprintf(os.Stderr, "storageName for %s not found: %s (%s)\n", storageDrive, storageName, file)
-			continue
+
+		newFile := newStorageName + ":" + slice[1]
+
+		if newFile != file {
+			fmt.Fprintf(os.Stderr, "%s: %s (%s: %s)\n", storageDrive, newFile, storageDrive, file)
 		}
-		storageData["file"] = file + ":" + slice[1]
+		storageData["file"] = newFile
+
 
 		// Same semantic as proxmox, import-from is only parsed if there is "0" string
 		if slice[1] != "0" {

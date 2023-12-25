@@ -22,7 +22,7 @@ var applyOptions = &ApplyOptions{}
 // applyCmd represents the set command
 var applyCmd = &cobra.Command{
 	Use:   "apply",
-	Short: "A brief description of your command",
+	Short: "Update the configuration of virtual machines and containers",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -66,6 +66,6 @@ func (o *ApplyOptions) Validate() error {
 
 func (o *ApplyOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
-	shared.Apply(applyOptions.Match, applyOptions.Set)
+	shared.Apply(applyOptions.Match, applyOptions.Set) 
 	return nil
 }

@@ -21,7 +21,7 @@ var shutdownOptions = &ShutdownOptions{}
 // startCmd represents the start command
 var shutdownCmd = &cobra.Command{
 	Use:   "shutdown",
-	Short: "shutdown a virtual machine or container gracefully",
+	Short: "Shutdown a virtual machine or container gracefully",
 	Long: `The shutdown command is used to gracefully shut down a virtual machine (VM) or container (LXC)
 running on Proxmox Virtual Environment (PVE). This ensures that the VM is powered off safely, 
 allowing for the proper termination of processes and file system operations.`,

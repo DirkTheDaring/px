@@ -19,7 +19,7 @@ var statusOptions = &StatusOptions{}
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "A brief description of your command",
+	Short: "Show the status of all virtual machines and containers",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

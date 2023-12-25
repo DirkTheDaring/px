@@ -13,53 +13,64 @@ import (
 	"strings"
 )
 
+
+func buildMappingTable(pxClients []PxClient) (map[string]int, []string) {
+    lookup := make(map[string]int)
+    var nodeNames []string
+
+    for i, client := range pxClients {
+        for _, nodeName := range client.Nodes {
+            if _, exists := lookup[nodeName]; exists {
+                fmt.Fprintf(os.Stderr, "WARN: node %v on cluster %v excluded. Already in cluster %v\n", nodeName, client.OrigIndex, lookup[nodeName])
+                continue
+            }
+            lookup[nodeName] = i
+            nodeNames = append(nodeNames, nodeName)
+        }
+    }
+    return lookup, nodeNames
+}
+
+func buildMappingTableForMachines(pxClients []PxClient) (map[int]map[string]interface{}, []map[string]interface{}) {
+    uniqueVMID := make(map[int]map[string]interface{})
+    var machines []map[string]interface{}
+
+    for _, client := range pxClients {
+        for _, machine := range client.Machines {
+            nodeName, okName := configmap.GetString(machine, "node")
+            vmid, okID := configmap.GetInt(machine, "vmid")
+
+            if !okName || !okID {
+                fmt.Fprintf(os.Stderr, "Error retrieving 'node' or 'vmid' for machine: %v\n", machine)
+                continue
+            }
+
+            machines = append(machines, machine)
+            if existingMachine, exists := uniqueVMID[vmid]; exists {
+                fmt.Fprintf(os.Stderr, "WARN: VMID %v (%v) on node %v excluded. Already exists on node %v (%v)\n", vmid, machine["name"], nodeName, existingMachine["node"], existingMachine["name"])
+                continue
+            }
+            uniqueVMID[vmid] = machine
+        }
+    }
+    return uniqueVMID, machines
+}
+
 func ProcessCluster(pxClients []PxClient) PxCluster {
 	pxCluster := PxCluster{}
 
 	pxCluster.PxClients = pxClients
-	nodeNames := []string{}
-	// Create Unique Lookup table (which usually exists in connected cluster, but may have problems in a
-	lookup := map[string]int{}
 
-	for i, pxClient := range pxClients {
-		for _, nodeName := range pxClient.Nodes {
-			existingEntry, found := lookup[nodeName]
-			// found can only happen with nodes which are not in cluster
-			if found {
-				fmt.Fprintf(os.Stderr, "WARN: node %v on cluster %v excluded. Already exists cluster %v\n", nodeName, pxClient.OrigIndex, existingEntry)
-			} else {
-				lookup[nodeName] = i
-				nodeNames = append(nodeNames, nodeName)
-			}
-		}
-	}
+	lookup, nodeNames := buildMappingTable(pxClients)
 	pxCluster.PxClientLookup = lookup
 	sort.Strings(nodeNames)
 	pxCluster.Nodes = nodeNames
 
-	uniqueVMID := map[int]map[string]interface{}{}
-	machines := []map[string]interface{}{}
-	for _, pxClient := range pxClients {
-		for _, machine := range pxClient.Machines {
-			nodeName, _ := configmap.GetString(machine, "node")
-			vmid, _ := configmap.GetInt(machine, "vmid")
-			machines = append(machines, machine)
-			existingMachine, found := uniqueVMID[vmid]
-			if found {
-				// fixme this should be in the standard policy a fatal error
-				fmt.Fprintf(os.Stderr, "WARN: vmid %v (%v) on node %v excluded. Already exists node %v (%v)\n", vmid, machine["name"], nodeName, existingMachine["node"], existingMachine["name"])
-				continue
-			} else {
-				uniqueVMID[vmid] = machine
-			}
-		}
-	}
-	//fmt.Fprintf(os.Stderr, "lookup: %v\n", lookup)
+	uniqueVMID, machines := buildMappingTableForMachines(pxClients)
 	pxCluster.UniqueMachines = uniqueVMID
-
 	StringSortMachines(machines, []string{"name"}, []bool{true})
-	pxCluster.Machines = machines // not unique
 
+	pxCluster.Machines = machines // not unique
 	return pxCluster
 }
 func PickClusterOld(configData map[string]interface{}, name string) int {

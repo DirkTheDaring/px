@@ -22,7 +22,7 @@ var destroyOptions = &DestroyOptions{}
 // destroyCmd represents the destroy command
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
-	Short: "A brief description of your command",
+	Short: "Destroy virtual machines and containers",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

@@ -19,7 +19,7 @@ var flashOptions = &FlashOptions{}
 // flashCmd represents the flash command
 var flashCmd = &cobra.Command{
 	Use:   "flash",
-	Short: "A brief description of your command",
+	Short: "Flash virtual machines",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

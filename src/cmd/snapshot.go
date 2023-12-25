@@ -13,7 +13,7 @@ import (
 // snapshotCmd represents the snapshot command
 var snapshotCmd = &cobra.Command{
 	Use:   "snapshot",
-	Short: "A brief description of your command",
+	Short: "Create live snapshots of virtual machines and containers",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

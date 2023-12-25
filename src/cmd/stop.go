@@ -21,7 +21,7 @@ var stopOptions = &StopOptions{}
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "A brief description of your command",
+	Short: "Stop virtual machines and containers",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

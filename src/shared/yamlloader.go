@@ -4,50 +4,56 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"fmt"
 
 	"gopkg.in/yaml.v3"
 )
 
-func SplitYAML(resources []byte) ([][]byte, error) {
-
-	dec := yaml.NewDecoder(bytes.NewReader(resources))
-	var res [][]byte
-	for {
-		var value interface{}
-		err := dec.Decode(&value)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		valueBytes, err := yaml.Marshal(value)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, valueBytes)
-	}
-	return res, nil
+// splitYAML takes a byte slice of a YAML and splits it into individual documents.
+func splitYAML(resources []byte) ([][]byte, error) {
+    dec := yaml.NewDecoder(bytes.NewReader(resources))
+    var res [][]byte
+    for {
+        var value interface{}
+        err := dec.Decode(&value)
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+            return nil, fmt.Errorf("error decoding YAML: %w", err)
+        }
+        valueBytes, err := yaml.Marshal(value)
+        if err != nil {
+            return nil, fmt.Errorf("error marshaling YAML: %w", err)
+        }
+        res = append(res, valueBytes)
+    }
+    return res, nil
 }
 
-func ReadYamlWithDashDashDashSingle(filename string) ([]map[string]interface{}, error) {
+// ReadYAMLWithDashDashDashSingle reads a YAML file specified by filename and
+// returns a slice of maps. Each map represents a YAML document.
+func ReadYAMLWithDashDashDashSingle(filename string) ([]map[string]interface{}, error) {
+    yamlFile, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return nil, fmt.Errorf("error reading file %s: %w", filename, err)
+    }
 
-	list := []map[string]interface{}{}
-	yamlFile, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	datas, err := SplitYAML(yamlFile)
-	if err != nil {
-		return nil, err
-	}
-	for _, data := range datas {
-		iMap := map[string]interface{}{}
-		err = yaml.Unmarshal(data, &iMap)
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, iMap)
-	}
-	return list, nil
+    datas, err := splitYAML(yamlFile)
+    if err != nil {
+        return nil, fmt.Errorf("error splitting YAML: %w", err)
+    }
+
+    var list []map[string]interface{}
+    for _, data := range datas {
+        var iMap map[string]interface{}
+        err = yaml.Unmarshal(data, &iMap)
+        if err != nil {
+            return nil, fmt.Errorf("error unmarshaling YAML: %w", err)
+        }
+        list = append(list, iMap)
+    }
+
+    return list, nil
 }
+
