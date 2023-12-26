@@ -23,7 +23,6 @@ import (
 	"github.com/DirkTheDaring/px-api-client-internal-go"
 
 )
-
 type CreateVirtualmachineOptions struct {
 	Node     string
 	Vmid     int
@@ -414,279 +413,279 @@ func getUpdatedVolume(volume string, aliases map[string]string, storageNames []s
 
 
 func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, createIgnition bool, dryRun bool, doUpdate bool) error {
-	createCT := false
+    vmid, createCT, err := createVMID("lxc", machine, node)
+    if err != nil {
+        return fmt.Errorf("error creating VMID: %w", err)
+    }
 
-	vmid := DetermineVmid(machine, "lxc")
-	//fmt.Fprintf(os.Stderr, "DetermineVmid() vmid: %v\n", vmid)
-	if vmid != 0 {
-		_, found := shared.GlobalPxCluster.UniqueMachines[vmid]
-		if !found {
-			createCT = true
-		}
-	}
-	// if vmid is still zero
-	if vmid == 0 {
-		createCT = true
-		vmid64, err := shared.GenerateClusterId(node)
-		if err == nil {
-			vmid = int(vmid64)
-			fmt.Fprintf(os.Stderr, "vmid64: %v\n", vmid64)
-			fmt.Fprintf(os.Stderr, "vmid: %v\n", vmid)
-		}
-	}
+    if !doUpdate && !createCT {
+        fmt.Fprintf(os.Stdout, "SKIP: CT %v %v (use --update if required)\n", vmid, node)
+        return nil
+    }
 
-	if vmid == 0 {
-		// Fixme fail if still 0
-		fmt.Fprintf(os.Stderr, "Could not create CT.\n")
-		return nil
-	}
+    fmt.Fprintf(os.Stdout, "%s CT %v %v\n", actionLabel(createCT), vmid, node)
 
-	if (!doUpdate && !createCT) {
-		//fmt.Fprintf(os.Stderr, "SKIP: VM %v %v %v %v\n", vmid, node,doUpdate, createVM)
-		fmt.Fprintf(os.Stderr, "SKIP: CT %v %v (use --update if required)\n", vmid, node)
-		return nil
-	}
+    if err := handleCTCreation(machine, vars, node, vmid, createCT, dryRun); err != nil {
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+        return err
+    }
 
-	if createCT {
-		fmt.Fprintf(os.Stderr, "CREATE CT %v %v\n", vmid, node)
-	} else {
-		fmt.Fprintf(os.Stderr, "UPDATE CT %v %v\n", vmid, node)
-	}
+    if doUpdate {
+        return updateCTConfig(machine, node, vmid, dryRun)
+    }
+
+    return nil
+}
+
+func actionLabel(createCT bool) string {
+    if createCT {
+        return "CREATE"
+    }
+    return "UPDATE"
+}
+
+func handleCTCreation(machine, vars map[string]interface{}, node string, vmid int, createCT, dryRun bool) error {
+    cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
+    if err != nil {
+        return fmt.Errorf("error picking cluster: %w", err)
+    }
+
+    prepareMachineForCreation(machine, cluster, node, vmid)
+
+    if createCT && !dryRun {
+        return createContainer(node, machine, vmid)
+    }
+    return nil
+}
+
+func prepareMachineForCreation(machine, cluster map[string]interface{}, node string, vmid int) {
+	SetOSTemplate(cluster, machine)
 	aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
 	storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
-	cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
-	if err != nil {
-		return err
-	}
-	//SetImportFrom(cluster, machine)
-	SetOSTemplate(cluster, machine)
-
 	cattles.ProcessStorage(machine, aliases, storageNames)
 	machine = MapRootFs(machine, aliases, storageNames)
-	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
-
 	machine["vmid"] = vmid
+	setDefaultHostnameIfNeeded(machine, vmid)
+}
 
-	_, found := configmap.GetString(machine, "hostname")
-	if !found {
-		machine["hostname"] = "ct" + strconv.Itoa(vmid)
-	}
+func setDefaultHostnameIfNeeded(machine map[string]interface{}, vmid int) {
+    if _, found := configmap.GetString(machine, "hostname"); !found {
+        machine["hostname"] = "ct" + strconv.Itoa(vmid)
+    }
+}
 
-	ct, err := CreatePxObjectCreateContainerRequest(machine)
+func createContainer(node string, machine map[string]interface{}, vmid int) error {
+    containerObject, err := CreatePxObjectCreateContainerRequest(machine)
+    if err != nil {
+        return fmt.Errorf("error creating container request: %w", err)
+    }
 
-	if err != nil {
-		return err
-	}
-	/*
-		fmt.Fprintf(os.Stderr, "%v\n", vm)
-		fmt.Fprintf(os.Stderr, "vmid: %v\n", vm.GetVmid())
-		fmt.Fprintf(os.Stderr, "args: %v\n", vm.GetArgs())
-		fmt.Fprintf(os.Stderr, "memory: %v\n", vm.GetMemory())
-	*/
-	ct2, err := CreatePxFlatCreateContainerRequest(ct)
+    containerFlat, err := CreatePxFlatCreateContainerRequest(containerObject)
+    if err != nil {
+        return fmt.Errorf("error creating flat container request: %w", err)
+    }
 
-	if createCT && !dryRun { // only on create
-		//fmt.Fprintf(os.Stderr, "%v\n", ct2)
-                // FIXME wait for UPID?
-		res, err := shared.CreateContainer(node, ct2)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "createContainer error: %v\n", err)
-			return nil
-		}
-		upid := res.GetData()
-		shared.WaitForUPID(node,upid)
-		//shared.WaitForVMUnlock(node, int64(vmid))
-	}
+    //txt2,_ := json.Marshal(containerFlat)
+    //fmt.Fprintf(os.Stderr, "  update: %s\n", txt2)
 
-	if !doUpdate {
-		return nil
-	}
-	ctConfig, err := shared.JSONGetCTConfig(node,int64(vmid))
-	ctConfigData,_ := configmap.GetMapEntry(ctConfig, "data")
+    res, err := shared.CreateContainer(node, containerFlat)
+    if err != nil {
+        return fmt.Errorf("error creating container: %w", err)
+    }
 
-	//fmt.Fprintf(os.Stderr, "ctConfig: %v %v\n", ctConfigData, err)
+    shared.WaitForUPID(node, res.GetData())
+    return nil
+}
 
-	newConfig := createChanges(ctConfigData, machine)
+func updateCTConfig(machine map[string]interface{}, node string, vmid int, dryRun bool) error {
+    ctConfig, err := shared.JSONGetCTConfig(node, int64(vmid))
+    if err != nil {
+        return fmt.Errorf("error getting CT config: %w", err)
+    }
 
-	//fmt.Fprintf(os.Stderr, "ctConfig: %v %v\n", ctConfigData, err)
-	// No changes
-	if len(newConfig) == 0 {
-		return nil
-	}
+    ctConfigData, _ := configmap.GetMapEntry(ctConfig, "data")
+    newConfig := createChanges(ctConfigData, machine)
+    if len(newConfig) == 0 {
+        return nil
+    }
 
-	txt, _ := json.Marshal(newConfig)
+    return updateCT(machine, node, vmid, newConfig, dryRun)
+}
 
-	//fmt.Fprintf(os.Stderr, "  update: %s\n", txt)
+func updateCT(machine map[string]interface{}, node string, vmid int, newConfig map[string]interface{}, dryRun bool) error {
 
-	updateContainerConfigSyncRequest := pxapiflat.UpdateContainerConfigSyncRequest{}
-	err = json.Unmarshal(txt, &updateContainerConfigSyncRequest)
-	if true {
-		txt2,_ := json.Marshal(updateContainerConfigSyncRequest)
-		fmt.Fprintf(os.Stderr, "  update: %s\n", txt2)
-	}
+    updateContainerConfigSyncRequest := pxapiflat.UpdateContainerConfigSyncRequest{}
+    txt, _ := json.Marshal(newConfig)
+    if err := json.Unmarshal(txt, &updateContainerConfigSyncRequest); err != nil {
+        return fmt.Errorf("error unmarshalling update request: %w", err)
+    }
+    fmt.Fprintf(os.Stderr, "  update: %s\n", txt)
+    if dryRun {
+        return nil
+    }
+    _, err := shared.UpdateContainerConfigSync(node, int64(vmid), updateContainerConfigSyncRequest)
+    if err != nil {
+        return fmt.Errorf("error updating container config: %w", err)
+    }
+    return nil
+}
 
-	if dryRun {
-		return nil
-	}
+func generateClusterId(node string) (int64, error) {
+    if len(shared.GlobalPxCluster.PxClients) <= 1 {
+        return shared.GetClusterNextId(node)
+    }
 
-	_, err = shared.UpdateContainerConfigSync(node, int64(vmid), updateContainerConfigSyncRequest)
+    pxClient := shared.GlobalPxCluster.GetPxClient(node)
+    formula := 8*100000 + pxClient.OrigIndex*1000
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "update container config for %v on node %s error: %v\n", vmid, node, err)
-		return nil
-	}
-	//upid := resp.GetData()
-	//shared.WaitForUPID(node,upid)
+    for offset := 0; offset < 1000; offset++ {
+        vmid := formula + offset
+        if _, found := shared.GlobalPxCluster.UniqueMachines[vmid]; !found {
+            return int64(vmid), nil
+        }
+    }
 
-	return nil
+    return 0, errors.New("unable to generate a unique cluster ID")
 }
 
 
-
-func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, dryRun bool, doUpdate bool) error {
-	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
-	var ok bool
+func createVMID(_type string, spec map[string]interface{}, node string) (int, bool, error) {
 	createVM := false
 
-	vmid := DetermineVmid(spec, "qemu")
-	//fmt.Fprintf(os.Stderr, "vmid from GetVmid: %v\n", vmid)
+	vmid := DetermineVmid(spec, _type)
 	if vmid != 0 {
 		_, found := shared.GlobalPxCluster.UniqueMachines[vmid]
 		if !found {
 			createVM = true
 		}
 	}
-	// if vmid is still zero
+
 	if vmid == 0 {
 		createVM = true
-		vmid64, err := shared.GenerateClusterId(node)
+		vmid64, err := generateClusterId(node)
 		if err == nil {
 			vmid = int(vmid64)
 			//fmt.Fprintf(os.Stderr, "vmid64: %v\n", vmid64)
 			//fmt.Fprintf(os.Stderr, "vmid: %v\n", vmid)
 		}
 	}
+
 	if vmid == 0 {
-		// Fixme fail if still 0
-		fmt.Fprintf(os.Stderr, "Could not create VM.\n")
-		return nil
+		err := errors.New("Could not create vmid.")
+		return 0, false, err
 	}
 
-	if (!doUpdate && !createVM) {
-		//fmt.Fprintf(os.Stderr, "SKIP: VM %v %v %v %v\n", vmid, node,doUpdate, createVM)
-		fmt.Fprintf(os.Stderr, "SKIP: VM %v %v (use --update if required)\n", vmid, node)
-		return nil
-	}
-	if createVM {
-		fmt.Fprintf(os.Stderr, "CREATE VM %v %v\n", vmid, node)
-	} else {
-		fmt.Fprintf(os.Stderr, "UPDATE VM %v %v\n", vmid, node)
-	}
-
-	// Map Aliases to real drives
-	aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
-
-	//fmt.Fprintf(os.Stderr, "CreateVM() map=%v\n", shared.GlobalPxCluster.PxClientLookup)
-	//fmt.Fprintf(os.Stderr, "CreateVM() aliases=%v\n", aliases)
-	storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
-	cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
-	if err != nil {
-		return err
-	}
-	SetImportFrom(cluster, spec)
-
-	cattles.ProcessStorage(spec, aliases, storageNames)
-
-
-	spec["vmid"] = vmid
-
-	_, found := configmap.GetString(spec, "name")
-	if !found {
-		spec["name"] = "vm" + strconv.Itoa(vmid)
-	}
-
-	//fmt.Fprintf(os.Stderr, "vmid: %v name: %v\n", vmid, result["name"])
-	//os.Exit(1)
-	// Figure out naming for machine - also that we can name the ignition file later on
-
-	var ignitionFilename string = ""
-	var ignitionName string = ""
-
-	createIgnition := HasIgnition(spec)
-	if createIgnition {
-		ignitionName = HandleIgnition(spec,cluster,node)
-	}
-
-	//proxmox.DumpJson(spec)
-	vm, err := CreatePxObjectCreateVMRequest(spec)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "vm err: %v\n", err)
-		return err
-	}
-	//fmt.Fprintf(os.Stderr, "RNG0: %v\n", vm.GetRng0())
-	/*
-		fmt.Fprintf(os.Stderr, "%v\n", vm)
-		fmt.Fprintf(os.Stderr, "vmid: %v\n", vm.GetVmid())
-		fmt.Fprintf(os.Stderr, "args: %v\n", vm.GetArgs())
-		fmt.Fprintf(os.Stderr, "memory: %v\n", vm.GetMemory())
-	*/
-	vm2, err := CreatePxFlatCreateVMRequest(vm)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "createFlat err: %v\n", err)
-		return err
-	}
-	// quit here it is only a dry run
-
-	if createVM && !dryRun { // only on create
-		shared.CreateVM(node, vm2)
-		// FIXME no UPID???
-		shared.WaitForVMUnlock(node, int64(vmid))
-	}
-	// FIXME -- dry run
-	if dryRun {
-		return nil
-	}
-
-	// After creation of VM we need to read the created config
-	// to get information like mac address
-	vmConfig, err := shared.JSONGetVMConfig(node, int64(vmid))
-	if err != nil {
-		return err
-	}
-	vmConfigData, ok := configmap.GetMapEntry(vmConfig, "data")
-	if !ok {
-		return nil
-	}
-
-
-        // Sometimes updates are required (e.g. size change after image flash)
-	DoVMUpdate(vmConfigData, spec, dryRun, node, vmid)
-
-
-	// Read the macaddres from the vmConfigData, and merge it to result
-	// then we finally have a fully configured network device section, with
-	// macaddress, which can be used in ignition or later maybe in autounattend
-	netVars := BuildMacAddressEntries(spec, vmConfigData)
-	spec = configmap.MergeMapRecursive(netVars, spec)
-
-	if createIgnition {
-		DoIgnition(spec, cluster, node, createIgnition,vars,dump, dryRun,ignitionName, ignitionFilename)
-	}
-	return nil
+	return vmid, createVM,  nil
 }
 
-// DoVMUpdate handles the virtual machine update process based on the provided parameters.
-func DoVMUpdate(vmConfigData, spec map[string]interface{}, dryRun bool, node string, vmid int) error {
+
+func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, dryRun bool, doUpdate bool) error {
+    vmid, createVM, err := createVMID("qemu", spec, node)
+    if err != nil {
+        return fmt.Errorf("create VM ID error: %w", err)
+    }
+
+    if !doUpdate && !createVM {
+        fmt.Fprintf(os.Stdout, "SKIP: VM %v %v (use --update if required)\n", vmid, node)
+        return nil
+    }
+
+    logCreationOrUpdate(createVM, vmid, node)
+    cluster, err := prepareVMForCreationOrUpdate(spec, node)
+    if err != nil {
+        return err
+    }
+
+    spec["vmid"] = vmid
+    setDefaultVMNameIfNotSet(spec, vmid)
+
+    var ignitionName string
+    createIgnition := HasIgnition(spec)
+    if createIgnition {
+        ignitionName = HandleIgnition(spec, cluster, node)
+    }
+
+    if err := createOrUpdateVM(spec, vmid, createVM, dryRun, node); err != nil {
+        return err
+    }
+
+    // also a vm creation needs adjustment if we need to resize the disks
+
+    updateVMConfig(spec, vmid, node, dryRun)
+
+    if createIgnition {
+	DoIgnition(spec, cluster, node, createIgnition,vars,dump, dryRun,ignitionName)
+    }
+    return nil
+}
+
+func logCreationOrUpdate(createVM bool, vmid int, node string) {
+    action := "UPDATE"
+    if createVM {
+        action = "CREATE"
+    }
+    fmt.Fprintf(os.Stdout, "%s VM %v %v\n", action, vmid, node)
+}
+
+func prepareVMForCreationOrUpdate(spec map[string]interface{}, node string) (map[string]interface{}, error) {
+    aliases := shared.GlobalPxCluster.GetAliasOnNode(node)
+    storageNames := shared.GlobalPxCluster.GetStorageNamesOnNode(node)
+    cluster, err := shared.PickCluster(shared.GlobalConfigData, ClusterName)
+    if err != nil {
+        return nil, fmt.Errorf("error picking cluster: %w", err)
+    }
+
+    SetImportFrom(cluster, spec)
+    cattles.ProcessStorage(spec, aliases, storageNames)
+    return cluster, nil
+}
+
+func setDefaultVMNameIfNotSet(spec map[string]interface{}, vmid int) {
+    if _, found := configmap.GetString(spec, "name"); !found {
+        spec["name"] = "vm" + strconv.Itoa(vmid)
+    }
+}
+
+func createOrUpdateVM(spec map[string]interface{}, vmid int, createVM, dryRun bool, node string) error {
+    vm, err := CreatePxObjectCreateVMRequest(spec)
+    if err != nil {
+        return fmt.Errorf("error creating VM request: %w", err)
+    }
+
+    vm2, err := CreatePxFlatCreateVMRequest(vm)
+    if err != nil {
+        return fmt.Errorf("error creating flat VM request: %w", err)
+    }
+
+    if createVM && !dryRun {
+        shared.CreateVM(node, vm2)
+        shared.WaitForVMUnlock(node, int64(vmid))
+    }
+    return nil
+}
+
+func updateVMConfig(spec map[string]interface{}, vmid int, node string, dryRun bool) error {
+    vmConfig, err := shared.JSONGetVMConfig(node, int64(vmid))
+    if err != nil {
+        return fmt.Errorf("error getting VM config: %w", err)
+    }
+
+    vmConfigData, _ := configmap.GetMapEntry(vmConfig, "data")
+
     if err := processStorageDrives(spec, vmConfigData, dryRun, node, vmid); err != nil {
         return err
     }
 
+    newConfig := createChanges(vmConfigData, spec)
+    if len(newConfig) == 0 {
+        return nil
+    }
     if err := updateVMConfiguration(vmConfigData, spec, dryRun, node, vmid); err != nil {
         return err
     }
-
     return nil
 }
+
 
 func processStorageDrives(spec, vmConfigData map[string]interface{}, dryRun bool, node string, vmid int) error {
     storageDrives := configmap.SelectKeys("^(virtio|scsi|ide|sata|efidisk|tpmstate)[0-9]+$", spec)
@@ -699,43 +698,52 @@ func processStorageDrives(spec, vmConfigData map[string]interface{}, dryRun bool
     return nil
 }
 
-func handleDriveSize(spec, vmConfigData map[string]interface{}, dryRun bool, node string, vmid int, storageDrive string) error {
+func calculateNewDriveSizeIncrease(spec map[string]interface{}, vmConfigData map[string]interface{}, node string, vmid int, storageDrive string) (int64, error) {
     storageData, ok := configmap.GetMapEntry(spec, storageDrive)
     if !ok {
-        return nil // Skip if storage data is not found
+        return 0,nil // Skip if storage data is not found
     }
 
     size, ok := configmap.GetString(storageData, "size")
     if !ok {
-        return nil // Skip if size is not specified
+        return 0,nil // Skip if size is not specified
     }
 
-    sizeInBytes, ok := shared.CalculateSizeInBytes(size)
+    desiredSizeInBytes, ok := shared.CalculateSizeInBytes(size)
     if !ok {
-        return fmt.Errorf("invalid size format: %s\n", size)
+        return 0, errors.New(fmt.Sprintf("invalid size format: %s\n", size))
     }
 
     driveEntry, ok := configmap.GetString(vmConfigData, storageDrive)
     if !ok {
-        return nil // Skip if drive entry is not found
+        return 0,nil // Skip if drive entry is not found
     }
     currentSizeInBytes, ok := extractCurrentSize(driveEntry)
 
-    if !ok || currentSizeInBytes == sizeInBytes {
-        return nil // Skip if current size is invalid or equal to desired size
+    if !ok || currentSizeInBytes == desiredSizeInBytes {
+        return 0,nil // Skip if current size is invalid or equal to desired size
     }
 
-    if currentSizeInBytes > sizeInBytes {
-        fmt.Fprintf(os.Stderr, "Drive %s size configuration is smaller than current VM: %s < %s\n", storageDrive, shared.ToSizeString(sizeInBytes), shared.ToSizeString(currentSizeInBytes))
-        return nil
+    if currentSizeInBytes > desiredSizeInBytes {
+	    err := errors.New(fmt.Sprintf("Drive %s size configuration is smaller than current VM: %s < %s\n", storageDrive, shared.ToSizeString(desiredSizeInBytes), shared.ToSizeString(currentSizeInBytes)))
+	    return 0, err
     }
-    delta_size := sizeInBytes-currentSizeInBytes
-    fmt.Fprintf(os.Stderr, "  %s increase size by %s to: %s\n", storageDrive, shared.ToSizeString(delta_size), shared.ToSizeString(sizeInBytes))
+    delta_size := desiredSizeInBytes-currentSizeInBytes
+    fmt.Fprintf(os.Stdout, "  %s: increase size by %s to: %s\n", storageDrive, shared.ToSizeString(delta_size), shared.ToSizeString(desiredSizeInBytes))
+    return  delta_size, nil
+}
 
-    if dryRun {
-	    return nil
-    }
-    return resizeDrive(node, vmid, storageDrive, delta_size)
+func handleDriveSize(spec map[string]interface{}, vmConfigData map[string]interface{}, dryRun bool, node string, vmid int, storageDrive string) error {
+	delta_size,_ := calculateNewDriveSizeIncrease(spec,vmConfigData, node,vmid, storageDrive)
+
+	if delta_size == 0 {
+		return nil
+	}
+	if dryRun {
+		return nil
+	}
+
+	return resizeDrive(node, vmid, storageDrive, delta_size)
 }
 
 func extractCurrentSize(driveEntry string) (int64, bool) {

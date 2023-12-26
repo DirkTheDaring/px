@@ -64,7 +64,7 @@ func DoIgnition(spec, cluster map[string]interface{}, node string, createIgnitio
 */
 
 // DoIgnition handles the ignition process based on the provided parameters.
-func DoIgnition(spec, cluster map[string]interface{}, node string, createIgnition bool, vars map[string]interface{}, dump bool, dryRun bool, ignitionName, ignitionFilename string) {
+func DoIgnition(spec, cluster map[string]interface{}, node string, createIgnition bool, vars map[string]interface{}, dump bool, dryRun bool, ignitionName string) {
     if !createIgnition {
         return
     }

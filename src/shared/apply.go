@@ -110,10 +110,11 @@ func processSettings(settings []string, attributeTypeDict map[string]string) map
 
     return myDict
 }
-
+/*
 func matchPrefix(value string, match string) {
 
 }
+*/
 
 func getSubset(filterString string, machine_type string) []map[string]interface{} {
 	machines := GlobalPxCluster.Machines
