@@ -32,7 +32,7 @@ to quickly create a Cobra application.`,
 		selectors, _ := configmap.GetMapEntry(cluster, "selectors")
 
 		newStorageContent := shared.JoinClusterAndSelector(shared.GlobalPxCluster, selectors)
-		newStorageContent = shared.ExctractLatest(shared.GlobalPxCluster, newStorageContent)
+		newStorageContent = shared.ExtractLatest(shared.GlobalPxCluster, newStorageContent)
 		headers := []string{"label", "volid", "node"}
 		shared.RenderOnConsole(newStorageContent, headers, "", "")
 	},

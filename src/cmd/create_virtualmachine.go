@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"px/configmap"
-	"px/ignition"
 	"px/proxmox"
 	"px/proxmox/cattles"
 	"px/proxmox/query"
@@ -37,8 +36,7 @@ type CreateVirtualmachineOptions struct {
 	Gw         string
 	DryRun     bool
 	Nameserver string
-	//Size   string
-	Update    bool
+	Update     bool
 }
 
 var createVirtualmachineOptions = &CreateVirtualmachineOptions{}
@@ -238,76 +236,90 @@ func GetConfigOptionAndRemaining(config string, option string) (string, string) 
 func InProxmoxVmidRange(vmid int) bool {
 	return vmid >= PROXMOX_MIN_VMID && vmid <= PROXMOX_MAX_VMID
 }
+
+// DetermineVmid extracts the VM ID from the provided machine map based on the given type.
+// It tries different methods to find the VM ID and returns 0 if it cannot be determined.
 func DetermineVmid(machine map[string]interface{}, _type string) int {
+    if vmid, ok := configmap.GetInt(machine, "vmid"); ok && InProxmoxVmidRange(vmid) {
+        return vmid
+    }
 
-	vmid, ok := configmap.GetInt(machine, "vmid")
-	if !ok {
-		//fmt.Fprintf(os.Stderr, "DetermineVmid() vmid not a number.\n")
-		goto skip
-	}
-	if InProxmoxVmidRange(vmid) {
-		return vmid
-	}
-	return 0
-skip:
-	var name string
-	if _type == "lxc" {
-		name = "hostname"
-	} else {
-		name = "name"
-	}
-	vmid, err := shared.GetVmidByAttribute(machine, name)
-	if err == nil {
-		//fmt.Fprintf(os.Stderr, "vmid from name: %v\n", vmid)
-		return vmid
-	}
-	ip, ok := shared.GetIpv4Address(machine, _type)
-	if !ok {
-		return 0
-	}
-	vmid, err = shared.DeriveVmidFromIp4Address(ip)
-	//fmt.Fprintf(os.Stderr, "vmid from ipv4: %v\n", vmid)
-	if err != nil {
-		return 0
-	}
+    // Get the VMID by name or hostname depending on the type
+    nameKey := getNameKey(_type)
+    if vmid, err := shared.GetVmidByAttribute(machine, nameKey); err == nil {
+        return vmid
+    }
 
-	return vmid
+    // Attempt to get the VMID from IP address
+    if ip, ok := shared.GetIpv4Address(machine, _type); ok {
+        if vmid, err := shared.DeriveVmidFromIp4Address(ip); err == nil {
+            return vmid
+        }
+    }
+
+    // Return 0 if no VMID could be determined
+    return 0
 }
-func SetImportFrom(cluster map[string]interface{}, machine map[string]interface{}) {
-	selectors, _ := configmap.GetMapEntry(cluster, "selectors")
-	newStorageContent := shared.JoinClusterAndSelector(shared.GlobalPxCluster, selectors)
-	latestContent := shared.ExctractLatest(shared.GlobalPxCluster, newStorageContent)
 
-	storageDrives := configmap.SelectKeys("^(virtio|scsi|ide|sata|efidisk|tpmstate)[0-9]+$", machine)
-
-	for _, storageDrive := range storageDrives {
-		storageData, _ := configmap.GetMapEntry(machine, storageDrive)
-		importFrom, ok := configmap.GetString(storageData, "import-from")
-		if !ok {
-			continue
-		}
-		found := false
-		var latestAndGreatest string
-		for _, storageLatestItem := range latestContent {
-			label := storageLatestItem["label"].(string)
-			if importFrom == label {
-				latestAndGreatest = storageLatestItem["volid"].(string)
-				found = true
-				break
-			}
-		}
-		if !found {
-			continue
-		}
-		storageData["import-from"] = latestAndGreatest
-	}
+// getNameKey returns the appropriate key for the name or hostname based on the type.
+func getNameKey(_type string) string {
+    if _type == "lxc" {
+        return "hostname"
+    }
+    return "name"
 }
+
+
+// SetImportFrom updates the 'import-from' field in machine's storage drives based on the cluster configuration.
+func SetImportFrom(cluster, machine map[string]interface{}) {
+    selectors, ok := configmap.GetMapEntry(cluster, "selectors")
+    if !ok {
+        // Handle error, log it, or return if necessary
+        return
+    }
+
+    newStorageContent := shared.JoinClusterAndSelector(shared.GlobalPxCluster, selectors)
+    latestContent := shared.ExtractLatest(shared.GlobalPxCluster, newStorageContent)
+
+    updateStorageDrives(machine, latestContent)
+}
+
+// updateStorageDrives updates the 'import-from' fields in the machine's storage drives.
+func updateStorageDrives(machine map[string]interface{}, latestContent []map[string]interface{}) {
+    storageDrivePattern := regexp.MustCompile("^(virtio|scsi|ide|sata|efidisk|tpmstate)[0-9]+$")
+
+    for driveKey, driveData := range machine {
+        if storageDrivePattern.MatchString(driveKey) {
+            if storageData, ok := driveData.(map[string]interface{}); ok {
+                updateImportFrom(storageData, latestContent)
+            }
+        }
+    }
+}
+
+// updateImportFrom updates the 'import-from' field in a given storage data.
+func updateImportFrom(storageData map[string]interface{}, latestContent []map[string]interface{}) {
+    importFrom, ok := configmap.GetString(storageData, "import-from")
+    if !ok {
+        return
+    }
+
+    for _, latestItem := range latestContent {
+        if latestItemLabel, ok := latestItem["label"].(string); ok && importFrom == latestItemLabel {
+            if latestItemVolid, ok := latestItem["volid"].(string); ok {
+                storageData["import-from"] = latestItemVolid
+                break
+            }
+        }
+    }
+}
+
 
 func SetOSTemplate(cluster map[string]interface{}, machine map[string]interface{}) {
 
 	selectors, _ := configmap.GetMapEntry(cluster, "selectors")
 	newStorageContent := shared.JoinClusterAndSelector(shared.GlobalPxCluster, selectors)
-	latestContent := shared.ExctractLatest(shared.GlobalPxCluster, newStorageContent)
+	latestContent := shared.ExtractLatest(shared.GlobalPxCluster, newStorageContent)
 	ostemplate, ok := configmap.GetString(machine, "ostemplate")
 	if !ok {
 		return
@@ -320,44 +332,14 @@ func SetOSTemplate(cluster map[string]interface{}, machine map[string]interface{
 		if ostemplate == label {
 			latestAndGreatest = storageLatestItem["volid"].(string)
 			machine["ostemplate"] = latestAndGreatest
-
 			fmt.Fprintf(os.Stderr, "  ostemplate: map alias %s to %s\n", ostemplate, latestAndGreatest)
-
 			return
 		}
 	}
 
 }
 
-func GetIgnitionArgs(cluster map[string]interface{}, node string, ignitionName string) (string, error) {
-	//fmt.Fprintf(os.Stderr, "GetIgnitionArgs() NODE: %v\n", node)
-	ignitionConfiguration, _ := configmap.GetMapEntry(cluster, "ignition")
 
-	if createVirtualmachineOptions.Dump {
-		proxmox.DumpJson(ignitionConfiguration)
-	}
-	storage, ok := configmap.GetString(ignitionConfiguration, "storage")
-	if !ok {
-		return "", errors.New("the ignition section does not contain a storage entry.")
-	}
-	// Fixme you should also check if this storage can be used to upload iso files
-	if !query.In(shared.GlobalPxCluster.GetStorageNamesOnNode(node), storage) {
-		return "", errors.New(fmt.Sprintf("storage for ignition does not exist: %s\n", storage))
-	}
-
-	pxClient := shared.GlobalPxCluster.GetPxClient(node)
-	storageEntry := pxClient.GetStorageByName(storage)
-	if storageEntry == nil {
-		return "", errors.New(fmt.Sprintf("storage for ignition not found: %s\n", storage))
-	}
-	contentArray := strings.Split(storageEntry["content"].(string), ",")
-	if !query.In(contentArray, "iso") {
-		return "", errors.New(fmt.Sprintf("storage does not accept iso content: %s\n", storage))
-	}
-	path := storageEntry["path"].(string)
-	ignitionArgs := "-fw_cfg name=opt/com.coreos/config,file=" + path + "/template/iso/" + ignitionName + ".iso"
-	return ignitionArgs, nil
-}
 func BuildMacAddressEntries(result map[string]interface{}, vmConfigData map[string]interface{}) map[string]interface{} {
 	networkAdapters := configmap.SelectKeys("^(net)[0-9]+$", result)
 	regex := "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
@@ -387,35 +369,49 @@ func BuildMacAddressEntries(result map[string]interface{}, vmConfigData map[stri
 	return netVars
 }
 
+// MapRootFs updates the 'rootfs' field in the machine map with an alias and ensures it's in the provided storage names.
 func MapRootFs(machine map[string]interface{}, aliases map[string]string, storageNames []string) map[string]interface{} {
-	rootfs, ok := configmap.GetMapEntry(machine, "rootfs")
-	if !ok {
-		return machine
-	}
-	volume, ok := configmap.GetString(rootfs, "volume")
-	if !ok {
-		return machine
-	}
-	slice := strings.Split(volume, ":")
+    rootfs, ok := configmap.GetMapEntry(machine, "rootfs")
+    if !ok {
+        return machine
+    }
 
-	if len(slice) != 2 {
-		return machine
-	}
+    volume, ok := configmap.GetString(rootfs, "volume")
+    if !ok {
+        return machine
+    }
 
-	storageName := slice[0]
+    updatedVolume := getUpdatedVolume(volume, aliases, storageNames)
+    if updatedVolume == "" {
+        fmt.Fprintf(os.Stderr, "storageName for %s not found: %s\n", "rootfs/volume", volume)
+        return machine
+    }
 
-	alias, ok := aliases[storageName]
-	if ok {
-		volume = alias
-	}
-	if !query.In(storageNames, volume) {
-		fmt.Fprintf(os.Stderr, "storageName for %s not found: %s\n", "rootfs/volume", volume)
-		return machine
-	}
-	rootfs["volume"] = volume + ":" + slice[1]
-	machine["rootfs"] = rootfs
-	return machine
+    rootfs["volume"] = updatedVolume
+    machine["rootfs"] = rootfs
+    return machine
 }
+
+// getUpdatedVolume processes the volume string and returns an updated volume if applicable.
+func getUpdatedVolume(volume string, aliases map[string]string, storageNames []string) string {
+    parts := strings.Split(volume, ":")
+    if len(parts) != 2 {
+        return ""
+    }
+
+    storageName, storagePath := parts[0], parts[1]
+    if alias, ok := aliases[storageName]; ok {
+        storageName = alias
+    }
+
+    if !query.In(storageNames, storageName) {
+        return ""
+    }
+
+    return storageName + ":" + storagePath
+}
+
+
 
 func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, createIgnition bool, dryRun bool, doUpdate bool) error {
 	createCT := false
@@ -469,8 +465,6 @@ func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump 
 	machine = MapRootFs(machine, aliases, storageNames)
 	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
 
-
-
 	machine["vmid"] = vmid
 
 	_, found := configmap.GetString(machine, "hostname")
@@ -513,6 +507,8 @@ func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump 
 	//fmt.Fprintf(os.Stderr, "ctConfig: %v %v\n", ctConfigData, err)
 
 	newConfig := createChanges(ctConfigData, machine)
+
+	//fmt.Fprintf(os.Stderr, "ctConfig: %v %v\n", ctConfigData, err)
 	// No changes
 	if len(newConfig) == 0 {
 		return nil
@@ -542,46 +538,10 @@ func CreateCT(machine map[string]interface{}, vars map[string]interface{}, dump 
 	//upid := resp.GetData()
 	//shared.WaitForUPID(node,upid)
 
-
-
 	return nil
 }
 
-// FIXME Shell are more sophisticated
-func ParseArgs(spec map[string]interface{}) []string {
-	argString, ok := configmap.GetString(spec, "args")
-	if !ok {
-		return []string{}
-	}
-	args := strings.Split(argString, " ")
-	return args
-}
 
-func HasIgnition(args []string) bool {
-	if len(args) < 2 {
-		return false
-	}
-	fwCfgFound := false
-	for _, arg := range args {
-		if arg == "" {
-			continue
-		}
-		if fwCfgFound {
-			subArgs := strings.Split(arg, ",")
-			for _, subArg := range subArgs {
-				if strings.Index(subArg, "name=opt/com.coreos/config") == 0 {
-					return true
-				}
-			}
-			fwCfgFound = false
-		} else {
-			if strings.Index(arg, "-fw_cfg") == 0 {
-				fwCfgFound = true
-			}
-		}
-	}
-	return false
-}
 
 func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump bool, node string, cattle string, dryRun bool, doUpdate bool) error {
 	//fmt.Fprintf(os.Stderr, "NODE: %v\n", node)
@@ -649,32 +609,14 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	//os.Exit(1)
 	// Figure out naming for machine - also that we can name the ignition file later on
 
-	ignitionFilename := ""
-	ignitionArgs := ""
+	var ignitionFilename string = ""
+	var ignitionName string = ""
 
-	ignitionName := spec["name"].(string) + ".ign"
-
-	args := ParseArgs(spec)
-	createIgnition := HasIgnition(args)
-
-	//fmt.Fprintf(os.Stderr, "CreateVM() createIgnition: %v\n", createIgnition)
-
+	createIgnition := HasIgnition(spec)
 	if createIgnition {
-		//ignitionConfiguration["enabled"] = "true"
-		ignitionArgs, err = GetIgnitionArgs(cluster, node, ignitionName)
-		if err != nil {
-			fmt.Fprintf(os.Stdout, "ignition rendering failed %v\n", err)
-			os.Exit(1)
-		}
+		ignitionName = HandleIgnition(spec,cluster,node)
 	}
 
-	if ignitionArgs != "" {
-		//fmt.Fprintf(os.Stderr, "ignitionArgs: %v\n", ignitionArgs)
-		spec["args"] = ignitionArgs
-		//fmt.Fprintf(os.Stderr, "---\n")
-		//proxmox.DumpJson(result)
-		//fmt.Fprintf(os.Stderr, "---\n")
-	}
 	//proxmox.DumpJson(spec)
 	vm, err := CreatePxObjectCreateVMRequest(spec)
 	if err != nil {
@@ -716,6 +658,11 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 		return nil
 	}
 
+
+        // Sometimes updates are required (e.g. size change after image flash)
+	DoVMUpdate(vmConfigData, spec, dryRun, node, vmid)
+
+
 	// Read the macaddres from the vmConfigData, and merge it to result
 	// then we finally have a fully configured network device section, with
 	// macaddress, which can be used in ignition or later maybe in autounattend
@@ -723,156 +670,119 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	spec = configmap.MergeMapRecursive(netVars, spec)
 
 	if createIgnition {
-		ignitionConfiguration := configmap.GetMapEntryWithDefault(cluster, "ignition", map[string]interface{}{})
-		//fmt.Fprintf(os.Stderr, "--- IGNITION\n")
-		//proxmox.DumpJson(ignitionConfiguration)
-		//fmt.Fprintf(os.Stderr, "--- IGNITION\n")
-		storage := configmap.GetStringWithDefault(ignitionConfiguration, "storage", "ignition")
-
-		sshAuthorizedKeysUrl, found := configmap.GetString(ignitionConfiguration, "sshkeys_url")
-		sshkeys2 := []string{}
-		if found {
-			sshkeys2 = shared.GetSSHResource(sshAuthorizedKeysUrl)
-			// External Ssh keys first in the list. "Static ssh keys are the fallback"
-		}
-		//pxClient := shared.GlobalPxCluster.GetPxClient(node)
-		//vars := pxClient.Vars
-
-		sshkeys := configmap.GetStringSliceWithDefault(vars, "ssh_authorized_keys", []string{})
-		//fmt.Fprintf(os.Stderr, "--- AAAAAAAAAAAAAAAAAAAAAAAA --- \n")
-
-		//fmt.Fprintf(os.Stderr, "XXXX sshkeys: %v\n", sshkeys2)
-		//sshkeys = append(sshkeys, sshkeys2...)
-		vars["ssh_authorized_keys"] = sshkeys
-		vars["ssh_authorized_keys2"] = sshkeys2
-		vars["self"] = spec
-		/*
-		persistent_modules, found := configmap.GetString(ignitionConfiguration, "persistent_modules")
-		if found {
-			vars["persistent_modules"] = persistent_modules
-
-		}
-		*/
-
-		//proxmox.DumpJson(vars)
-
-		if dump {
-			//fmt.Fprintf(os.Stderr, "XXX---\n")
-			proxmox.DumpJson(vars)
-			///fmt.Fprintf(os.Stderr, "XXX---\n")
-		}
-
-		ignition.CreateProxmoxIgnitionFile(vars, ignitionName)
-
-		ignitionFilename = "output/" + ignitionName + ".iso"
-		if dryRun {
-			goto skip
-		}
-		//fmt.Fprintf(os.Stderr, "Upload %v %v\n", node, storage)
-		f, _ := os.Open(ignitionFilename)
-		shared.Upload(node, storage, "iso", f)
-		f.Close()
-
+		DoIgnition(spec, cluster, node, createIgnition,vars,dump, dryRun,ignitionName, ignitionFilename)
 	}
-skip:
-        // Here begins stuff only for updating VMs
-        if !doUpdate {
-		return nil
-
-	}
-	// Some post processing, after Virtual Machine creation
-	storageDrives := configmap.SelectKeys("^(virtio|scsi|ide|sata|efidisk|tpmstate)[0-9]+$", spec)
-
-	for _, storageDrive := range storageDrives {
-		storageData, _ := configmap.GetMapEntry(spec, storageDrive)
-		//fmt.Fprintf(os.Stderr, "storageData %s %v\n", storageDrive, storageData)
-		size, ok := configmap.GetString(storageData, "size")
-		//fmt.Fprintf(os.Stderr, "importFrom: %v %v\n", ok, importFrom)
-		if !ok {
-			continue
-		}
-		sizeInBytes, ok := shared.CalculateSizeInBytes(size)
-		if !ok {
-			// Fixme this should have been validated all along already
-			fmt.Fprintf(os.Stderr, "sizeInBytes: %v\n", sizeInBytes)
-			continue
-		}
-
-		driveEntry, ok := configmap.GetString(vmConfigData, storageDrive)
-		if !ok {
-			continue
-		}
-		//fmt.Fprintf(os.Stderr, "driveEntry: %v\n", driveEntry)
-
-		//sizeStr, remainingDriveEntry := GetConfigOptionAndRemaining(driveEntry, "size")
-		sizeStr, _ := GetConfigOptionAndRemaining(driveEntry, "size")
-		//fmt.Fprintf(os.Stderr, "sizeStr: %v remainingDriveEntry: %v\n", sizeStr, remainingDriveEntry)
-
-		tmpArray := strings.Split(sizeStr, "=")
-		if len(tmpArray) < 2 {
-			continue
-		}
-		currentSizeInBytes, ok := shared.CalculateSizeInBytes(tmpArray[1])
-		if !ok {
-			continue
-		}
-
-		//fmt.Fprintf(os.Stderr, "  %v %v (current)\n", shared.ToSizeString(sizeInBytes), shared.ToSizeString(currentSizeInBytes))
-
-
-		//fmt.Fprintf(os.Stderr, "currentSizeInBytes %v\n", currentSizeInBytes)
-		if currentSizeInBytes > sizeInBytes {
-
-			fmt.Fprintf(os.Stderr, "  %s drive size configuration is smaller (%v) than current VM: %v\n", storageDrive, shared.ToSizeString(sizeInBytes), shared.ToSizeString(currentSizeInBytes))
-			//fmt.Fprintf(os.Stderr, "  storageDrive %s has size %v but running vm has: %v\n", storageDrive, sizeInBytes, currentSizeInBytes)
-			continue
-		}
-		if currentSizeInBytes < sizeInBytes {
-			delta_size := sizeInBytes - currentSizeInBytes
-			fmt.Fprintf(os.Stderr, "  %s increase size by %s to: %s\n", storageDrive, shared.ToSizeString(delta_size), shared.ToSizeString(sizeInBytes))
-
-			if dryRun {
-				continue
-			}
-
-			res, err := shared.ResizeVMDisk(node, int64(vmid), storageDrive, "+"+strconv.FormatInt(delta_size, 10))
-
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "  %v\n", err)
-			}
-			upid := res.GetData()
-			shared.WaitForUPID(node,upid)
-		}
-
-	}
-
-	newConfig := createChanges(vmConfigData,spec)
-	if len(newConfig) == 0 {
-		return nil
-	}
-	//proxmox.DumpJson(newConfig)
-	txt, _ := json.Marshal(newConfig)
-	updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
-	err = json.Unmarshal(txt, &updateVMConfigRequest)
-	//proxmox.DumpJson(updateVMConfigRequest)
-	if true {
-		txt2,_ := json.Marshal(updateVMConfigRequest)
-		fmt.Fprintf(os.Stderr, "  update: %s\n", txt2)
-	}
-
-	if dryRun {
-		return nil
-	}
-	resp, err := shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "update vm config for %v on node %s error: %v\n", vmid, node, err)
-		return nil
-	}
-	upid := resp.GetData()
-	shared.WaitForUPID(node,upid)
-
 	return nil
+}
+
+// DoVMUpdate handles the virtual machine update process based on the provided parameters.
+func DoVMUpdate(vmConfigData, spec map[string]interface{}, dryRun bool, node string, vmid int) error {
+    if err := processStorageDrives(spec, vmConfigData, dryRun, node, vmid); err != nil {
+        return err
+    }
+
+    if err := updateVMConfiguration(vmConfigData, spec, dryRun, node, vmid); err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func processStorageDrives(spec, vmConfigData map[string]interface{}, dryRun bool, node string, vmid int) error {
+    storageDrives := configmap.SelectKeys("^(virtio|scsi|ide|sata|efidisk|tpmstate)[0-9]+$", spec)
+
+    for _, storageDrive := range storageDrives {
+        if err := handleDriveSize(spec, vmConfigData, dryRun, node, vmid, storageDrive); err != nil {
+            fmt.Fprintf(os.Stderr, "%v\n", err)
+        }
+    }
+    return nil
+}
+
+func handleDriveSize(spec, vmConfigData map[string]interface{}, dryRun bool, node string, vmid int, storageDrive string) error {
+    storageData, ok := configmap.GetMapEntry(spec, storageDrive)
+    if !ok {
+        return nil // Skip if storage data is not found
+    }
+
+    size, ok := configmap.GetString(storageData, "size")
+    if !ok {
+        return nil // Skip if size is not specified
+    }
+
+    sizeInBytes, ok := shared.CalculateSizeInBytes(size)
+    if !ok {
+        return fmt.Errorf("invalid size format: %s\n", size)
+    }
+
+    driveEntry, ok := configmap.GetString(vmConfigData, storageDrive)
+    if !ok {
+        return nil // Skip if drive entry is not found
+    }
+    currentSizeInBytes, ok := extractCurrentSize(driveEntry)
+
+    if !ok || currentSizeInBytes == sizeInBytes {
+        return nil // Skip if current size is invalid or equal to desired size
+    }
+
+    if currentSizeInBytes > sizeInBytes {
+        fmt.Fprintf(os.Stderr, "Drive %s size configuration is smaller than current VM: %s < %s\n", storageDrive, shared.ToSizeString(sizeInBytes), shared.ToSizeString(currentSizeInBytes))
+        return nil
+    }
+    delta_size := sizeInBytes-currentSizeInBytes
+    fmt.Fprintf(os.Stderr, "  %s increase size by %s to: %s\n", storageDrive, shared.ToSizeString(delta_size), shared.ToSizeString(sizeInBytes))
+
+    if dryRun {
+	    return nil
+    }
+    return resizeDrive(node, vmid, storageDrive, delta_size)
+}
+
+func extractCurrentSize(driveEntry string) (int64, bool) {
+    sizeStr, _ := GetConfigOptionAndRemaining(driveEntry, "size")
+    parts := strings.SplitN(sizeStr, "=", 2)
+    if len(parts) < 2 {
+        return 0, false
+    }
+    return shared.CalculateSizeInBytes(parts[1])
+}
+
+func resizeDrive(node string, vmid int, storageDrive string, deltaSize int64) error {
+    res, err := shared.ResizeVMDisk(node, int64(vmid), storageDrive, "+"+strconv.FormatInt(deltaSize, 10))
+    if err != nil {
+        return fmt.Errorf("failed to resize disk: %v", err)
+    }
+
+    shared.WaitForUPID(node, res.GetData())
+    return nil
+}
+
+func updateVMConfiguration(vmConfigData, spec map[string]interface{}, dryRun bool, node string, vmid int) error {
+    newConfig := createChanges(vmConfigData, spec)
+    if len(newConfig) == 0 {
+        return nil
+    }
+    txt, _ := json.Marshal(newConfig)
+
+
+    updateVMConfigRequest := pxapiflat.UpdateVMConfigRequest{}
+    if err := json.Unmarshal(txt, &updateVMConfigRequest); err != nil {
+        return fmt.Errorf("failed to unmarshal VM config: %v", err)
+    }
+
+    if dryRun {
+        fmt.Fprintf(os.Stderr, "Update VM Config (Dry Run): %v\n", updateVMConfigRequest)
+        return nil
+    }
+    fmt.Fprintf(os.Stderr, "  update: %s\n", txt)
+
+    resp, err := shared.UpdateVMConfig(node, int64(vmid), &updateVMConfigRequest)
+    if err != nil {
+        return fmt.Errorf("failed to update VM config: %v", err)
+    }
+
+    shared.WaitForUPID(node, resp.GetData())
+    return nil
 }
 
 // createChanges generates a new configuration based on the differences
@@ -885,6 +795,8 @@ func createChanges(vmConfigData, spec map[string]interface{}) map[string]interfa
     updateConfig(newConfig, vmConfigData, spec, "balloon")
     updateConfig(newConfig, vmConfigData, spec, "cores")
     updateConfig(newConfig, vmConfigData, spec, "onboot")
+    //fmt.Errorf("txt: %v\n", newConfig)
+    //fmt.Fprintf(os.Stderr, "createChanges() %v\n", newConfig)
 
     return newConfig
 }

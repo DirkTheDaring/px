@@ -289,7 +289,7 @@ func JoinClusterAndSelector(pxCluster PxCluster, selectors map[string]interface{
 	})
 	return newStorageContent
 }
-func ExctractLatest(pxCluster PxCluster, newStorageContent []map[string]interface{}) []map[string]interface{} {
+func ExtractLatest(pxCluster PxCluster, newStorageContent []map[string]interface{}) []map[string]interface{} {
 
 	nodeLength := len(pxCluster.Nodes)
 	nodeLookup := map[string]int{}

@@ -339,7 +339,7 @@ func ProcessSection(object map[string]interface{}, cmd string) {
 
 		selectors, _ := configmap.GetMapEntry(cluster, "selectors")
 		newStorageContent := shared.JoinClusterAndSelector(shared.GlobalPxCluster, selectors)
-		latestContent := shared.ExctractLatest(shared.GlobalPxCluster, newStorageContent)
+		latestContent := shared.ExtractLatest(shared.GlobalPxCluster, newStorageContent)
 
 		//fmt.Fprintf(os.Stderr, "newStorageContent = %v\n", newStorageContent)
 		found := false
