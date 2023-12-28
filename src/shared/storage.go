@@ -1,10 +1,13 @@
 package shared
 
-import "os"
+import (
+	"os"
+	"px/etc"
+)
 
 func StorageList() {
 	types := []string{}
-	storage := GlobalPxCluster.GetStorage(types)
+	storage := etc.GlobalPxCluster.GetStorage(types)
 
 	headers := []string{"storage", "type", "path", "node"}
 	storage = StringSortMachines(storage, []string{"storage"}, []bool{true})

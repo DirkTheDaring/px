@@ -4,7 +4,11 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"px/shared"
+	"fmt"
+	"os"
+	"px/documents"
+	"px/etc"
+	"px/queries"
 
 	"github.com/spf13/cobra"
 )
@@ -30,9 +34,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("--- Pre run for create virtualmachine")
-		pxClients := shared.GetStorageContentAll(shared.GlobalPxCluster.PxClients)
+		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.PxClients)
 		//shared.GlobalPxCluster = shared.ProcessCluster(pxClients)
-		shared.GlobalPxCluster.PxClients = pxClients
+		etc.GlobalPxCluster.PxClients = pxClients
 		//fmt.Println("--- Pre run end")
 
 	},
@@ -76,6 +80,10 @@ func (o *CreateOptions) Validate() error {
 func (o *CreateOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
 	//proxmox.Test()
-	ProcessFiles(createOptions.File, "create")
+	///ProcessFiles(createOptions.File, "create")
+	err := documents.ProcessFiles("create", ProcessSection, createOptions.File)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
 	return nil
 }

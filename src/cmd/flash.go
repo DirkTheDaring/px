@@ -4,6 +4,8 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"px/documents"
+
 	"github.com/spf13/cobra"
 )
 
@@ -59,6 +61,8 @@ func (o *FlashOptions) Validate() error {
 
 func (o *FlashOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
-	ProcessFiles(flashOptions.File, "flash")
+	//ProcessFiles(flashOptions.File, "flash")
+	documents.ProcessFiles("flash", ProcessSection, flashOptions.File)
+
 	return nil
 }

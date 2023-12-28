@@ -1,12 +1,13 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"encoding/json"
+	"px/api"
 	"px/configmap"
+	"px/etc"
 	"px/proxmox"
 	"px/shared"
 
@@ -20,7 +21,7 @@ type SnapshotListOptions struct {
 var snapshotListOptions = &SnapshotListOptions{}
 
 func GetSnapshotsAll() []map[string]interface{} {
-	machines := shared.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.Machines
 
 	//fmt.Fprintf(os.Stderr, "CALL\n")
 	list := []map[string]interface{}{}
@@ -39,7 +40,7 @@ func GetSnapshotsAll() []map[string]interface{} {
 		}
 		vmidInt64 := int64(vmid)
 		if _type == proxmox.PROXMOX_MACHINE_CT {
-			snapshots, err := shared.GetContainerSnapshots(node, vmidInt64)
+			snapshots, err := api.GetContainerSnapshots(node, vmidInt64)
 			if err != nil {
 				continue
 			}
@@ -60,7 +61,7 @@ func GetSnapshotsAll() []map[string]interface{} {
 				list = append(list, item)
 			}
 		} else {
-			snapshots, err := shared.GetVMSnapshots(node, vmidInt64)
+			snapshots, err := api.GetVMSnapshots(node, vmidInt64)
 			if err != nil {
 				continue
 			}

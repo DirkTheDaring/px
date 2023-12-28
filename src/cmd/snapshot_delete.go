@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -8,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"px/api"
 	"px/configmap"
+	"px/etc"
 	"px/proxmox"
+	"px/queries"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -88,7 +90,7 @@ func (o *SnapshotDeleteOptions) Run(args []string) error {
 		vmidInt64 := int64(vmid)
 		//name := filteredMachine["name"].(string)
 
-		machine, _ := shared.GlobalPxCluster.UniqueMachines[vmid]
+		machine, _ := etc.GlobalPxCluster.UniqueMachines[vmid]
 		status, _ := configmap.GetString(machine, "status")
 		if status != "stopped" {
 			fmt.Fprintf(os.Stderr, "ignoring snapshot '%v' on node '%v' for %v: machine is running!\n", snapshotName, node, name)
@@ -96,11 +98,11 @@ func (o *SnapshotDeleteOptions) Run(args []string) error {
 		}
 		fmt.Fprintf(os.Stderr, "delete snapshot '%v' on node '%v' for %v\n", snapshotName, node, name)
 		if _type == proxmox.PROXMOX_MACHINE_CT {
-			shared.DeleteContainerSnapshot(node, vmidInt64, snapshotName)
-			shared.WaitForCTUnlock(node, vmidInt64)
+			api.DeleteContainerSnapshot(node, vmidInt64, snapshotName)
+			queries.WaitForContainerUnlock(node, vmidInt64)
 		} else {
-			shared.DeleteVMSnapshot(node, vmidInt64, snapshotName)
-			shared.WaitForVMUnlock(node, vmidInt64)
+			api.DeleteVMSnapshot(node, vmidInt64, snapshotName)
+			queries.WaitForVMUnlock(node, vmidInt64)
 		}
 	}
 	return nil

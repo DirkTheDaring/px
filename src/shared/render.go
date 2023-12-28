@@ -5,9 +5,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterColumn string, filterString string) {
+	RenderOnConsoleNew(outputs, headers, filterColumn, filterString, []string{})
+}
+
+func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, filterColumn string, filterString string, rightAlignments []string) {
 
 	if len(headers) == 0 && len(outputs) > 0 {
 		list := []string{}
@@ -19,6 +25,7 @@ func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterC
 	}
 
 	rows := [][]any{}
+	alignments := [][]bool{}
 
 	maxColSizes := make([]int, len(headers))
 	for i, _ := range maxColSizes {
@@ -49,17 +56,36 @@ func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterC
 		}
 
 		cols := []any{}
+
+		alignment_right := []bool{}
+
 		for i, header := range headers {
 			value, ok := output[header]
 			if !ok {
 				value = ""
 			}
+			//defaultAlignment := defaultAlignments[i]
 			valueString, ok := value.(string)
 			if ok {
 				if len(valueString) > maxColSizes[i] {
 					maxColSizes[i] = len(valueString)
 				}
 				cols = append(cols, valueString)
+				if slices.Contains(rightAlignments, header) {
+					alignment_right = append(alignment_right, true)
+				} else {
+					alignment_right = append(alignment_right, false)
+				}
+				continue
+			}
+			valueInt64, ok := value.(int64)
+			if ok {
+				valueString := strconv.FormatInt(valueInt64, 10)
+				if len(valueString) > maxColSizes[i] {
+					maxColSizes[i] = len(valueString)
+				}
+				cols = append(cols, valueString)
+				alignment_right = append(alignment_right, true)
 				continue
 			}
 
@@ -70,19 +96,27 @@ func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterC
 			}
 			valueInt := int(valueFloat64)
 			valueString = strconv.Itoa(valueInt)
+
 			if len(valueString) > maxColSizes[i] {
 				maxColSizes[i] = len(valueString)
 			}
 			cols = append(cols, valueString)
+			alignment_right = append(alignment_right, true)
 
 		}
 		//fmt.Fprintf(os.Stderr, "%v\n", cols)
 		rows = append(rows, cols)
+		alignments = append(alignments, alignment_right)
 	}
 
 	format := "%-" + strconv.Itoa(maxColSizes[0]) + "s"
 	for i := 1; i < len(maxColSizes); i++ {
-		format = format + " %-" + strconv.Itoa(maxColSizes[i]) + "s"
+		alignment_right := alignments[0][i]
+		if alignment_right {
+			format = format + " %" + strconv.Itoa(maxColSizes[i]) + "s"
+		} else {
+			format = format + " %-" + strconv.Itoa(maxColSizes[i]) + "s"
+		}
 	}
 	format = format + "\n"
 

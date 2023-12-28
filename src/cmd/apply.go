@@ -1,20 +1,20 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
-//	"fmt"
-//	"os"
+	//	"fmt"
+	//	"os"
+
+	"px/queries"
 
 	"github.com/spf13/cobra"
-	"px/shared"
 )
 
 type ApplyOptions struct {
 	Match string
-	Set []string
+	Set   []string
 }
 
 var applyOptions = &ApplyOptions{}
@@ -66,6 +66,6 @@ func (o *ApplyOptions) Validate() error {
 
 func (o *ApplyOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
-	shared.Apply(applyOptions.Match, applyOptions.Set)
+	queries.Apply(applyOptions.Match, applyOptions.Set)
 	return nil
 }

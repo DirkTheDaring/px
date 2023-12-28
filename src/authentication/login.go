@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"os"
 	"px/configmap"
-	"px/shared"
+	"px/etc"
 	"time"
-	"github.com/DirkTheDaring/px-api-client-go"
+
+	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
 
 func CreateHttpClient(insecureSkipVerify bool) http.Client {
@@ -73,13 +74,13 @@ func CreateContext(ticket string, csrfpreventiontoken string) context.Context {
 	return newContext
 }
 
-func LoginClusterNodes(nodes []map[string]interface{}, timeout time.Duration) []shared.PxClient {
+func LoginClusterNodes(nodes []map[string]interface{}, timeout time.Duration) []etc.PxClient {
 	// Usually only one node per cluster is needed
 	// However especially in testlabs, the nodes might come and go and might
 	// not be even joined. We then handle this by joining the nodes, if there
 	// is no conflict of nodenames (which MUST BE UNIQUE) AND Vmids which
 	// MUST BE UNIQUE (same requirements as for a proxmox cluster which is joined)
-	pxClients := []shared.PxClient{}
+	pxClients := []etc.PxClient{}
 
 	for i, node := range nodes {
 		enabled := configmap.GetBoolWithDefault(node, "enabled", true)
@@ -100,7 +101,7 @@ func LoginClusterNodes(nodes []map[string]interface{}, timeout time.Duration) []
 		//fmt.Fprintf(os.Stderr, "%v %v\n", ticket, csrfpreventiontoken)
 		context := CreateContext(ticket, csrfpreventiontoken)
 
-		pxClient := shared.PxClient{}
+		pxClient := etc.PxClient{}
 		pxClient.Context = context
 		pxClient.ApiClient = apiClient
 		pxClient.OrigIndex = i

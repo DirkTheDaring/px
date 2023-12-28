@@ -1,12 +1,13 @@
 package queries
 
 import (
-	"github.com/DirkTheDaring/px-api-client-go"
 	"context"
 	"fmt"
 	"os"
-	"px/shared"
+
+	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
+
 func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
 	//{
 	//  "data": [
@@ -89,7 +90,7 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[str
 		return nil
 	}
 	//resources := clusterResourcesResponse.GetData()
-	restResponse := shared.ConvertJsonHttpResponseToMap(r)
+	restResponse, _ := ConvertJsonHttpResponseToMap2(r)
 	//fmt.Fprintf(os.Stderr, "resp: %v %v\n", len(resources), restResponse["data"])
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", r)

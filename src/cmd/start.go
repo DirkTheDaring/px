@@ -1,12 +1,13 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"px/api"
+	"px/etc"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -30,7 +31,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("start called")
-		machines := shared.GlobalPxCluster.Machines
+		machines := etc.GlobalPxCluster.Machines
 
 		if startOptions.Match != "" {
 			filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{startOptions.Match, "stopped"})
@@ -43,9 +44,9 @@ to quickly create a Cobra application.`,
 				vmidInt64 := int64(vmid)
 				fmt.Fprintf(os.Stderr, "start: %v %v %v %v\n", node, vmidInt64, name, _type)
 				if _type == "lxc" {
-					shared.StartContainer(node, vmidInt64)
+					api.StartContainer(node, vmidInt64)
 				} else {
-					shared.StartVM(node, vmidInt64)
+					api.StartVM(node, vmidInt64)
 				}
 			}
 		}

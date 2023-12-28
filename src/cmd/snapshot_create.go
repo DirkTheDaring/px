@@ -1,16 +1,18 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	"px/api"
 	"px/configmap"
+	"px/etc"
 	"px/shared"
+
+	"github.com/spf13/cobra"
 )
 
 type SnapshotCreateOptions struct {
@@ -39,13 +41,13 @@ to quickly create a Cobra application.`,
 }
 
 func (o *SnapshotCreateOptions) Validate(args []string) error {
-	if o.Node != "" && !shared.GlobalPxCluster.HasNode(o.Node) {
+	if o.Node != "" && !etc.GlobalPxCluster.HasNode(o.Node) {
 		return errors.New(fmt.Sprintf("node does not exist: %v\n", o.Node))
 	}
 	if o.Vmid != 0 && !InProxmoxVmidRange(o.Vmid) {
 		return errors.New(fmt.Sprintf("vmid not in range: %v\n", o.Vmid))
 	}
-	if o.Vmid != 0 && shared.GlobalPxCluster.UniqueMachines[o.Vmid] == nil {
+	if o.Vmid != 0 && etc.GlobalPxCluster.UniqueMachines[o.Vmid] == nil {
 		return errors.New(fmt.Sprintf("vmid does not exist: %v\n", o.Vmid))
 	}
 	if len(args) == 0 {
@@ -59,7 +61,7 @@ func (o *SnapshotCreateOptions) Validate(args []string) error {
 func (o *SnapshotCreateOptions) Run(args []string) error {
 	snapshotName := args[0]
 	if o.Match != "" {
-		machines := shared.GlobalPxCluster.Machines
+		machines := etc.GlobalPxCluster.Machines
 		filteredMachines := shared.FilterStringColumns(machines, []string{"name"}, []string{o.Match})
 		for _, filteredMachine := range filteredMachines {
 			node, ok := configmap.GetString(filteredMachine, "node")
@@ -81,9 +83,9 @@ func (o *SnapshotCreateOptions) Run(args []string) error {
 			vmidInt64 := int64(vmid)
 			fmt.Fprintf(os.Stderr, "create snapshot '%v' on node '%v' for %v\n", snapshotName, node, name)
 			if _type == "lxc" {
-				shared.CreateContainerSnapshot(node, vmidInt64, snapshotName)
+				api.CreateContainerSnapshot(node, vmidInt64, snapshotName)
 			} else {
-				shared.CreateVMSnapshot(node, vmidInt64, snapshotName)
+				api.CreateVMSnapshot(node, vmidInt64, snapshotName)
 			}
 		}
 	}

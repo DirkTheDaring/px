@@ -12,3 +12,9 @@ This tool was created out of the need to manage lab systems:
 * PX_CONFIG_FILE_PATH
 * HOME
 
+# This creates an /etc/modules-load.d/persistent-modules.conf
+# with the content listed below
+
+persistent_modules:
+  - modulea
+  - moduleb

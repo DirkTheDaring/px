@@ -1,17 +1,19 @@
 package cmd
 
 import (
-	"px/configmap"
 	"errors"
-	"strings"
-	"px/proxmox"
 	"fmt"
+	"os"
+	"px/api"
+	"px/configmap"
+	"px/etc"
+	"px/ignition"
+	"px/proxmox"
 	"px/proxmox/query"
 	"px/shared"
-	"os"
-	"px/ignition"
-
+	"strings"
 )
+
 /*
 func DoIgnition(spec, cluster map[string]interface{}, node string, createIgnition bool,vars map[string]interface{}, dump bool, dryRun bool, ignitionName string,ignitionFilename string ) {
 
@@ -65,114 +67,108 @@ func DoIgnition(spec, cluster map[string]interface{}, node string, createIgnitio
 
 // DoIgnition handles the ignition process based on the provided parameters.
 func DoIgnition(spec, cluster map[string]interface{}, node string, createIgnition bool, vars map[string]interface{}, dump bool, dryRun bool, ignitionName string) {
-    if !createIgnition {
-        return
-    }
+	if !createIgnition {
+		return
+	}
 
-    ignitionConfiguration := configmap.GetMapEntryWithDefault(cluster, "ignition", map[string]interface{}{})
-    if dump {
-        proxmox.DumpJson(ignitionConfiguration)
-    }
+	ignitionConfiguration := configmap.GetMapEntryWithDefault(cluster, "ignition", map[string]interface{}{})
+	if dump {
+		proxmox.DumpJson(ignitionConfiguration)
+	}
 
-    storage, sshkeys, sshkeys2 := getIgnitionConfig(ignitionConfiguration, vars)
-    vars["ssh_authorized_keys"] = sshkeys
-    vars["ssh_authorized_keys2"] = sshkeys2
-    vars["self"] = spec
+	storage, sshkeys, sshkeys2 := getIgnitionConfig(ignitionConfiguration, vars)
+	vars["ssh_authorized_keys"] = sshkeys
+	vars["ssh_authorized_keys2"] = sshkeys2
+	vars["self"] = spec
 
-    if dump {
-        proxmox.DumpJson(vars)
-    }
+	if dump {
+		proxmox.DumpJson(vars)
+	}
 
-    ignition.CreateProxmoxIgnitionFile(vars, ignitionName)
+	ignition.CreateProxmoxIgnitionFile(vars, ignitionName)
 
-    if dryRun {
-	    return
-    }
-    uploadIgnitionFile(node, storage, ignitionName)
+	if dryRun {
+		return
+	}
+	uploadIgnitionFile(node, storage, ignitionName)
 }
 
 // getIgnitionConfig extracts the storage and SSH keys information from the ignition configuration.
 func getIgnitionConfig(ignitionConfiguration, vars map[string]interface{}) (string, []string, []string) {
-    storage := configmap.GetStringWithDefault(ignitionConfiguration, "storage", "default_ignition_storage")
+	storage := configmap.GetStringWithDefault(ignitionConfiguration, "storage", "default_ignition_storage")
 
-    sshAuthorizedKeysUrl, found := configmap.GetString(ignitionConfiguration, "sshkeys_url")
-    var sshkeys2 []string
-    if found {
-        sshkeys2 = shared.GetSSHResource(sshAuthorizedKeysUrl)
-    }
+	sshAuthorizedKeysUrl, found := configmap.GetString(ignitionConfiguration, "sshkeys_url")
+	var sshkeys2 []string
+	if found {
+		sshkeys2 = shared.GetSSHResource(sshAuthorizedKeysUrl)
+	}
 
-    sshkeys := configmap.GetStringSliceWithDefault(vars, "ssh_authorized_keys", []string{})
-    return storage, sshkeys, sshkeys2
+	sshkeys := configmap.GetStringSliceWithDefault(vars, "ssh_authorized_keys", []string{})
+	return storage, sshkeys, sshkeys2
 }
 
 // uploadIgnitionFile handles the uploading of the ignition file to the specified storage.
 func uploadIgnitionFile(node, storage, ignitionName string) {
-    ignitionFilename := "output/" + ignitionName + ".iso"
-    f, err := os.Open(ignitionFilename)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Failed to open ignition file: %v\n", err)
-        os.Exit(1)
-    }
-    defer f.Close()
+	ignitionFilename := "output/" + ignitionName + ".iso"
+	f, err := os.Open(ignitionFilename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open ignition file: %v\n", err)
+		os.Exit(1)
+	}
+	defer f.Close()
 
-    shared.Upload(node, storage, "iso", f)
+	api.Upload(node, storage, "iso", f)
 }
 
-
 // HandleIgnition processes the ignition parameters for a given virtual machine.
-func HandleIgnition(spec, cluster map[string]interface{}, node string) string{
-    if !HasIgnition(spec) {
-        return ""
-    }
+func HandleIgnition(spec, cluster map[string]interface{}, node string) string {
+	if !HasIgnition(spec) {
+		return ""
+	}
 
-    ignitionName := spec["name"].(string) + ".ign"
-    ignitionArgs, err := GetIgnitionArgs(cluster, node, ignitionName)
-    if err != nil {
-        fmt.Fprintf(os.Stdout, "ignition rendering failed: %v\n", err)
-        os.Exit(1)
-    }
+	ignitionName := spec["name"].(string) + ".ign"
+	ignitionArgs, err := GetIgnitionArgs(cluster, node, ignitionName)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "ignition rendering failed: %v\n", err)
+		os.Exit(1)
+	}
 
-    if ignitionArgs != "" {
-        spec["args"] = ignitionArgs
-    }
-    return ignitionName
+	if ignitionArgs != "" {
+		spec["args"] = ignitionArgs
+	}
+	return ignitionName
 }
 
 // HasIgnition checks if the '-fw_cfg' followed by 'name=opt/com.coreos/config' is present in the spec's arguments.
 func HasIgnition(spec map[string]interface{}) bool {
-    argString, ok := configmap.GetString(spec, "args")
-    if !ok {
-        return false
-    }
+	argString, ok := configmap.GetString(spec, "args")
+	if !ok {
+		return false
+	}
 
-    return containsIgnitionConfig(strings.Fields(argString))
+	return containsIgnitionConfig(strings.Fields(argString))
 }
 
 // containsIgnitionConfig checks if the provided arguments contain the ignition configuration.
 func containsIgnitionConfig(args []string) bool {
-    for i := 0; i < len(args)-1; i++ {
-        if args[i] == "-fw_cfg" && hasIgnitionConfig(args[i+1]) {
-            return true
-        }
-    }
-    return false
+	for i := 0; i < len(args)-1; i++ {
+		if args[i] == "-fw_cfg" && hasIgnitionConfig(args[i+1]) {
+			return true
+		}
+	}
+	return false
 }
 
 // hasIgnitionConfig checks if the string contains the ignition configuration.
 func hasIgnitionConfig(arg string) bool {
-    subArgs := strings.Split(arg, ",")
-    for _, subArg := range subArgs {
-        if strings.HasPrefix(subArg, "name=opt/com.coreos/config") {
-            return true
-        }
-    }
-    return false
+	subArgs := strings.Split(arg, ",")
+	for _, subArg := range subArgs {
+		if strings.HasPrefix(subArg, "name=opt/com.coreos/config") {
+			return true
+		}
+	}
+	return false
 }
-
-
-
-
-
 
 func GetIgnitionArgs(cluster map[string]interface{}, node string, ignitionName string) (string, error) {
 	//fmt.Fprintf(os.Stderr, "GetIgnitionArgs() NODE: %v\n", node)
@@ -186,11 +182,11 @@ func GetIgnitionArgs(cluster map[string]interface{}, node string, ignitionName s
 		return "", errors.New("the ignition section does not contain a storage entry.")
 	}
 	// Fixme you should also check if this storage can be used to upload iso files
-	if !query.In(shared.GlobalPxCluster.GetStorageNamesOnNode(node), storage) {
+	if !query.In(etc.GlobalPxCluster.GetStorageNamesOnNode(node), storage) {
 		return "", errors.New(fmt.Sprintf("storage for ignition does not exist: %s\n", storage))
 	}
 
-	pxClient := shared.GlobalPxCluster.GetPxClient(node)
+	pxClient := etc.GlobalPxCluster.GetPxClient(node)
 	storageEntry := pxClient.GetStorageByName(storage)
 	if storageEntry == nil {
 		return "", errors.New(fmt.Sprintf("storage for ignition not found: %s\n", storage))

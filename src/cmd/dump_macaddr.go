@@ -1,16 +1,18 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"px/configmap"
+	"px/etc"
+	"px/queries"
 	"px/shared"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // dumpMacaddrCmd represents the dump command
@@ -24,43 +26,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Fprintf(os.Stderr, "dump macaddr\n")
-		list := []map[string]interface{}{}
-		for _, machine := range shared.GlobalPxCluster.Machines {
-			_type, _ := configmap.GetString(machine, "type")
-			if _type == "lxc" {
-				continue
-			}
-			vmid, _ := configmap.GetInt(machine, "vmid")
-			node, _ := configmap.GetString(machine, "node")
-
-			vmConfig, err := shared.JSONGetVMConfig(node, int64(vmid))
-			if err != nil {
-				return
-			}
-			vmConfigData, ok := configmap.GetMapEntry(vmConfig, "data")
-			if !ok {
-				return
-			}
-			networkAdapters := configmap.SelectKeys("^net[0-9]+$", vmConfigData)
-			for _, networkAdapter := range networkAdapters {
-				net, _ := configmap.GetString(vmConfigData, networkAdapter)
-				virtioStr, _ := GetConfigOptionAndRemaining(net, "virtio")
-				array := strings.Split(virtioStr, "=")
-				if len(array) == 2 {
-					item := map[string]interface{}{}
-					item["node"] = node
-					item["vmid"] = machine["vmid"]
-					item["name"] = vmConfigData["name"]
-					item["net"] = networkAdapter
-					item["macaddr"] = array[1]
-					list = append(list, item)
-				}
-			}
-
-		}
-		headers := []string{"macaddr", "net", "node", "vmid", "name"}
-		shared.RenderOnConsole(list, headers, "name", "")
+		dump_macaddr()
 	},
 }
 
@@ -76,4 +42,77 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// dumpMacaddrCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+// Function to get network adapters of a VM
+func getNetworkAdapters(vmConfig map[string]interface{}) []map[string]interface{} {
+	var networkAdaptersList []map[string]interface{}
+
+	networkAdapters := configmap.SelectKeys("^net[0-9]+$", vmConfig)
+	for _, networkAdapter := range networkAdapters {
+		netConfig, _ := configmap.GetString(vmConfig, networkAdapter)
+		virtioStr, _ := GetConfigOptionAndRemaining(netConfig, "virtio")
+		macAddress := getMacAddress(virtioStr)
+
+		if macAddress != "" {
+			adapterInfo := map[string]interface{}{
+				"net":     networkAdapter,
+				"macaddr": macAddress,
+			}
+			networkAdaptersList = append(networkAdaptersList, adapterInfo)
+		}
+	}
+
+	return networkAdaptersList
+}
+
+// Function to extract MAC address from the virtio string
+func getMacAddress(virtioStr string) string {
+	array := strings.Split(virtioStr, "=")
+	if len(array) == 2 {
+		return array[1]
+	}
+	return ""
+}
+
+// Function to process each machine
+func processMachine(machine map[string]interface{}, list *[]map[string]interface{}) {
+	vmType, _ := configmap.GetString(machine, "type")
+	if vmType == "lxc" {
+		return
+	}
+	//proxmox.DumpJson(machine)
+	vmid, _ := configmap.GetInt(machine, "vmid")
+
+	//fmt.Fprintf(os.Stderr, "%v\n", vmid)
+	node, _ := configmap.GetString(machine, "node")
+	vmConfig, err := queries.JSONGetVMConfig(node, int64(vmid))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting VM config: %v\n", err)
+		return
+	}
+
+	vmConfigData, ok := configmap.GetMapEntry(vmConfig, "data")
+	if !ok {
+		fmt.Fprintf(os.Stderr, "VM config data not found\n")
+		return
+	}
+
+	networkAdapters := getNetworkAdapters(vmConfigData)
+	for _, adapter := range networkAdapters {
+		adapter["node"] = node
+		adapter["vmid"] = int64(vmid)
+		adapter["name"] = vmConfigData["name"]
+		*list = append(*list, adapter)
+	}
+}
+
+func dump_macaddr() {
+	var machineList []map[string]interface{}
+	for _, machine := range etc.GlobalPxCluster.Machines {
+		processMachine(machine, &machineList)
+	}
+
+	headers := []string{"macaddr", "net", "node", "vmid", "name"}
+	shared.RenderOnConsole(machineList, headers, "name", "")
 }

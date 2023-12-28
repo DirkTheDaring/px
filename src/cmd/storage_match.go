@@ -1,12 +1,13 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
 	"px/configmap"
+	"px/etc"
+	"px/queries"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -23,16 +24,16 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		pxClients := shared.GetStorageContentAll(shared.GlobalPxCluster.PxClients)
-		shared.GlobalPxCluster.PxClients = pxClients
+		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.PxClients)
+		etc.GlobalPxCluster.PxClients = pxClients
 
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("storage match called")
-		cluster, _ := shared.PickCluster(shared.GlobalConfigData, ClusterName)
+		cluster, _ := shared.PickCluster(etc.GlobalConfigData, ClusterName)
 
 		selectors, _ := configmap.GetMapEntry(cluster, "selectors")
-		newStorageContent := shared.JoinClusterAndSelector(shared.GlobalPxCluster, selectors)
+		newStorageContent := shared.JoinClusterAndSelector(etc.GlobalPxCluster, selectors)
 		headers := []string{"label", "volid", "node"}
 		shared.RenderOnConsole(newStorageContent, headers, "", "")
 	},

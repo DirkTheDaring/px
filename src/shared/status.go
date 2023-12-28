@@ -2,14 +2,17 @@ package shared
 
 import (
 	"os"
+	"px/etc"
 )
 
 func Status(match string) {
 	{
-		machines := GlobalPxCluster.Machines
+		machines := etc.GlobalPxCluster.Machines
 		headers := []string{"name", "type", "node", "vmid", "status"}
+		//alignments_right := []string{"type", "node"}
+		alignments_right := []string{"node"}
 
-		RenderOnConsole(machines, headers, "name", match)
+		RenderOnConsoleNew(machines, headers, "name", match, alignments_right)
 		os.Exit(0)
 	}
 }

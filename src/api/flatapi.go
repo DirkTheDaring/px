@@ -1,29 +1,31 @@
-package shared
+package api
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"px/etc"
 	"strconv"
-	"github.com/DirkTheDaring/px-api-client-go"
+
+	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
 
-func GetPxClient(node string) (PxClient, *pxapiflat.APIClient, context.Context, error) {
-	var pxClient PxClient
+func GetPxClient(node string) (etc.PxClient, *pxapiflat.APIClient, context.Context, error) {
+	var pxClient etc.PxClient
 
 	var apiClient *pxapiflat.APIClient
 	var context context.Context
 	//index, ok := nodeMap[node]
 
-	index, ok := GlobalPxCluster.PxClientLookup[node]
+	index, ok := etc.GlobalPxCluster.PxClientLookup[node]
 
 	if !ok {
 		return pxClient, nil, context, errors.New("node not found: " + node)
 	}
 
 	//pxClient = pxclients[index]
-	pxClient = GlobalPxCluster.PxClients[index]
+	pxClient = etc.GlobalPxCluster.PxClients[index]
 	apiClient = pxClient.ApiClient
 	context = pxClient.Context
 	return pxClient, apiClient, context, nil

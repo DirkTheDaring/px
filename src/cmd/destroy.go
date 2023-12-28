@@ -1,13 +1,14 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"px/api"
 	"px/configmap"
+	"px/etc"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -30,39 +31,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("destroy called")
-		machines := shared.GlobalPxCluster.Machines
-		if destroyOptions.Match != "" {
-			filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{destroyOptions.Match, "stopped"})
-			for _, filteredMachine := range filteredMachines {
-				//fmt.Fprintf(os.Stderr, "%v %v\n", filteredMachine["vmid"], filteredMachine["status"])
-
-				node, ok := configmap.GetString(filteredMachine, "node")
-				if !ok {
-					continue
-				}
-				vmid, ok := configmap.GetInt(filteredMachine, "vmid")
-				if !ok {
-					continue
-				}
-				_type, ok := configmap.GetString(filteredMachine, "type")
-				if !ok {
-					continue
-				}
-				name, ok := configmap.GetString(filteredMachine, "name")
-				if !ok {
-					continue
-				}
-				vmidInt64 := int64(vmid)
-
-				fmt.Fprintf(os.Stderr, "destroy: %v %v %v %v\n", node, vmidInt64, name, _type)
-				if _type == "lxc" {
-					shared.DeleteContainer(node, vmidInt64)
-				} else {
-					shared.DeleteVM(node, vmidInt64)
-				}
-			}
-		}
+		DoDestroy(destroyOptions.Match)
 	},
 }
 
@@ -80,4 +49,44 @@ func init() {
 	// destroyCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	destroyCmd.Flags().StringVar(&destroyOptions.Match, "match", "", "match")
 
+}
+
+// DoDestroy removes machines that match the specified criteria.
+// It prints the details of the machines being destroyed.
+func DoDestroy(match string) {
+	// Early exit if match is empty, as no machines would be matched.
+	if match == "" {
+		return
+	}
+
+	// Retrieve the list of machines from the global cluster.
+	machines := etc.GlobalPxCluster.Machines
+
+	// Filter out machines that match the criteria and are not stopped.
+	// This also reports machines that are excluded because they are stopped.
+	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "stopped"})
+
+	// Iterate over the filtered machines to destroy them.
+	for _, machine := range filteredMachines {
+		// Extract necessary details from the machine's config.
+		node, okNode := configmap.GetString(machine, "node")
+		vmid, okVMID := configmap.GetInt(machine, "vmid")
+		machineType, okType := configmap.GetString(machine, "type")
+		name, okName := configmap.GetString(machine, "name")
+
+		// Skip this iteration if any required details are missing.
+		if !okNode || !okVMID || !okType || !okName {
+			continue
+		}
+
+		// Log the details of the machine being destroyed.
+		fmt.Fprintf(os.Stderr, "destroy: %v %v %v %v\n", node, int64(vmid), name, machineType)
+
+		// Destroy the machine based on its type.
+		if machineType == "lxc" {
+			api.DeleteContainer(node, int64(vmid))
+		} else {
+			api.DeleteVM(node, int64(vmid))
+		}
+	}
 }

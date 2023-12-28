@@ -1,12 +1,13 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"px/api"
+	"px/etc"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -27,7 +28,7 @@ running on Proxmox Virtual Environment (PVE). This ensures that the VM is powere
 allowing for the proper termination of processes and file system operations.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		machines := shared.GlobalPxCluster.Machines
+		machines := etc.GlobalPxCluster.Machines
 
 		if shutdownOptions.Match != "" {
 			filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{shutdownOptions.Match, "running"})
@@ -40,9 +41,9 @@ allowing for the proper termination of processes and file system operations.`,
 				vmidInt64 := int64(vmid)
 				fmt.Fprintf(os.Stderr, "shutdown: %v %v %v %v\n", node, vmidInt64, name, _type)
 				if _type == "lxc" {
-					shared.ShutdownContainer(node, vmidInt64)
+					api.ShutdownContainer(node, vmidInt64)
 				} else {
-					shared.ShutdownVM(node, vmidInt64)
+					api.ShutdownVM(node, vmidInt64)
 				}
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"px/configmap"
+	"px/etc"
 	"px/proxmox"
 	"px/proxmox/query"
 	"regexp"
@@ -13,51 +14,50 @@ import (
 	"strings"
 )
 
+func buildMappingTable(pxClients []etc.PxClient) (map[string]int, []string) {
+	lookup := make(map[string]int)
+	var nodeNames []string
 
-func buildMappingTable(pxClients []PxClient) (map[string]int, []string) {
-    lookup := make(map[string]int)
-    var nodeNames []string
-
-    for i, client := range pxClients {
-        for _, nodeName := range client.Nodes {
-            if _, exists := lookup[nodeName]; exists {
-                fmt.Fprintf(os.Stderr, "WARN: node %v on cluster %v excluded. Already in cluster %v\n", nodeName, client.OrigIndex, lookup[nodeName])
-                continue
-            }
-            lookup[nodeName] = i
-            nodeNames = append(nodeNames, nodeName)
-        }
-    }
-    return lookup, nodeNames
+	for i, client := range pxClients {
+		for _, nodeName := range client.Nodes {
+			if _, exists := lookup[nodeName]; exists {
+				fmt.Fprintf(os.Stderr, "WARN: node %v on cluster %v excluded. Already in cluster %v\n", nodeName, client.OrigIndex, lookup[nodeName])
+				continue
+			}
+			lookup[nodeName] = i
+			nodeNames = append(nodeNames, nodeName)
+		}
+	}
+	return lookup, nodeNames
 }
 
-func buildMappingTableForMachines(pxClients []PxClient) (map[int]map[string]interface{}, []map[string]interface{}) {
-    uniqueVMID := make(map[int]map[string]interface{})
-    var machines []map[string]interface{}
+func buildMappingTableForMachines(pxClients []etc.PxClient) (map[int]map[string]interface{}, []map[string]interface{}) {
+	uniqueVMID := make(map[int]map[string]interface{})
+	var machines []map[string]interface{}
 
-    for _, client := range pxClients {
-        for _, machine := range client.Machines {
-            nodeName, okName := configmap.GetString(machine, "node")
-            vmid, okID := configmap.GetInt(machine, "vmid")
+	for _, client := range pxClients {
+		for _, machine := range client.Machines {
+			nodeName, okName := configmap.GetString(machine, "node")
+			vmid, okID := configmap.GetInt(machine, "vmid")
 
-            if !okName || !okID {
-                fmt.Fprintf(os.Stderr, "Error retrieving 'node' or 'vmid' for machine: %v\n", machine)
-                continue
-            }
+			if !okName || !okID {
+				fmt.Fprintf(os.Stderr, "Error retrieving 'node' or 'vmid' for machine: %v\n", machine)
+				continue
+			}
 
-            machines = append(machines, machine)
-            if existingMachine, exists := uniqueVMID[vmid]; exists {
-                fmt.Fprintf(os.Stderr, "WARN: VMID %v (%v) on node %v excluded. Already exists on node %v (%v)\n", vmid, machine["name"], nodeName, existingMachine["node"], existingMachine["name"])
-                continue
-            }
-            uniqueVMID[vmid] = machine
-        }
-    }
-    return uniqueVMID, machines
+			machines = append(machines, machine)
+			if existingMachine, exists := uniqueVMID[vmid]; exists {
+				fmt.Fprintf(os.Stderr, "WARN: VMID %v (%v) on node %v excluded. Already exists on node %v (%v)\n", vmid, machine["name"], nodeName, existingMachine["node"], existingMachine["name"])
+				continue
+			}
+			uniqueVMID[vmid] = machine
+		}
+	}
+	return uniqueVMID, machines
 }
 
-func ProcessCluster(pxClients []PxClient) PxCluster {
-	pxCluster := PxCluster{}
+func ProcessCluster(pxClients []etc.PxClient) etc.PxCluster {
+	pxCluster := etc.PxCluster{}
 
 	pxCluster.PxClients = pxClients
 
@@ -172,12 +172,11 @@ func PickCluster(configData map[string]interface{}, name string) (map[string]int
 	return nil, errors.New("cluster name not found: " + name)
 }
 
-
 func StringSortMachines(machines []map[string]interface{}, fieldNames []string, ascending []bool) []map[string]interface{} {
 	//fmt.Fprintf(os.Stderr, "StringSortMachines machines: %v fieldNames: %v\n", machines, fieldNames)
 
-	count := 0 
-        newMachines := []map[string]interface{}{}
+	count := 0
+	newMachines := []map[string]interface{}{}
 
 	for _, item := range machines {
 		found := true
@@ -187,27 +186,26 @@ func StringSortMachines(machines []map[string]interface{}, fieldNames []string, 
 				break
 			}
 		}
-		if !found  {
+		if !found {
 			continue
 		}
-		count++;
+		count++
 		//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", item[fieldNames[0]])
 		newMachines = append(newMachines, item)
 	}
 
-
 	sort.Slice(newMachines, func(i, j int) bool {
 		k := 0
 		/*
-		for k = 0; k < count-1; k++ {
-			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", k)
+			for k = 0; k < count-1; k++ {
+				//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %v\n", k)
 
-			a := newMachines[i][fieldNames[k]].(string) 
-			b := newMachines[j][fieldNames[k]].(string) 
-			if a != b {
-				break
+				a := newMachines[i][fieldNames[k]].(string)
+				b := newMachines[j][fieldNames[k]].(string)
+				if a != b {
+					break
+				}
 			}
-		}
 		*/
 
 		if ascending[k] == true {
@@ -224,7 +222,7 @@ func StringSortMachines(machines []map[string]interface{}, fieldNames []string, 
 	})
 	return newMachines
 }
-func JoinClusterAndSelector(pxCluster PxCluster, selectors map[string]interface{}) []map[string]interface{} {
+func JoinClusterAndSelector(pxCluster etc.PxCluster, selectors map[string]interface{}) []map[string]interface{} {
 	storageNames := pxCluster.GetStorageNames()
 	storageContent := pxCluster.GetStorageContent()
 	//fmt.Fprintf(os.Stdout, "selectors: %v\n", selectors)
@@ -289,7 +287,7 @@ func JoinClusterAndSelector(pxCluster PxCluster, selectors map[string]interface{
 	})
 	return newStorageContent
 }
-func ExtractLatest(pxCluster PxCluster, newStorageContent []map[string]interface{}) []map[string]interface{} {
+func ExtractLatest(pxCluster etc.PxCluster, newStorageContent []map[string]interface{}) []map[string]interface{} {
 
 	nodeLength := len(pxCluster.Nodes)
 	nodeLookup := map[string]int{}
@@ -457,7 +455,7 @@ func StringFilter(mapList []map[string]interface{}, key string, value string) []
 
 }
 func GetMachinesByName(name string) []map[string]interface{} {
-	return StringFilter(GlobalPxCluster.Machines, "name", name)
+	return StringFilter(etc.GlobalPxCluster.Machines, "name", name)
 }
 
 func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, error) {
@@ -544,19 +542,6 @@ func DeriveVmidFromIp4Address(ip string) (int, error) {
 	return newVmid, nil
 }
 
-func Pow(base int64, pow int64) int64 {
-	if pow == 0 {
-		return 1
-	}
-	var n int64
-	var i int64
-	n = 1
-	for i = 1; i <= pow; i++ {
-		n = n * base
-	}
-	return n
-
-}
 func CalculateSizeInBytes(sizestring string) (int64, bool) {
 
 	if sizestring == "" {

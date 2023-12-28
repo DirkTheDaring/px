@@ -1,17 +1,19 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	"px/api"
 	"px/configmap"
 	"px/proxmox"
+	"px/queries"
 	"px/shared"
+
+	"github.com/spf13/cobra"
 )
 
 type SnapshotRollbackOptions struct {
@@ -97,12 +99,12 @@ func (o *SnapshotRollbackOptions) Run(args []string) error {
 		*/
 		fmt.Fprintf(os.Stderr, "rollback snapshot '%v' on node '%v' for %v\n", snapshotName, node, name)
 		if _type == proxmox.PROXMOX_MACHINE_CT {
-			shared.RollbackContainerSnapshot(node, vmidInt64, snapshotName)
-			shared.WaitForCTUnlock(node, vmidInt64)
+			api.RollbackContainerSnapshot(node, vmidInt64, snapshotName)
+			queries.WaitForContainerUnlock(node, vmidInt64)
 
 		} else {
-			shared.RollbackVMSnapshot(node, vmidInt64, snapshotName)
-			shared.WaitForVMUnlock(node, vmidInt64)
+			api.RollbackVMSnapshot(node, vmidInt64, snapshotName)
+			queries.WaitForVMUnlock(node, vmidInt64)
 		}
 	}
 	return nil
