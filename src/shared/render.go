@@ -2,135 +2,98 @@ package shared
 
 import (
 	"fmt"
-	"os"
-	"strconv"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
-func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterColumn string, filterString string) {
-	RenderOnConsoleNew(outputs, headers, filterColumn, filterString, []string{})
+// RenderOnConsole displays data in a table format on the console.
+func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterColumn, filterString string) {
+	RenderOnConsoleNew(outputs, headers, filterColumn, filterString, nil)
 }
 
-func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, filterColumn string, filterString string, rightAlignments []string) {
-
-	if len(headers) == 0 && len(outputs) > 0 {
-		list := []string{}
-		item := outputs[0]
-		for key, _ := range item {
-			list = append(list, key)
-		}
-		headers = list
+// RenderOnConsoleNew is an enhanced version of RenderOnConsole with right alignment options.
+func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, filterColumn, filterString string, rightAlignments []string) {
+	if len(headers) == 0 {
+		headers = extractHeadersFromOutputs(outputs)
 	}
 
-	rows := [][]any{}
-	alignments := [][]bool{}
-
-	maxColSizes := make([]int, len(headers))
-	for i, _ := range maxColSizes {
-		maxColSizes[i] = len(headers[i])
+	filteredOutputs := filterOutputs(outputs, filterColumn, filterString)
+	if len(filteredOutputs) == 0 {
+		return
 	}
+
+	columnWidths := calculateColumnWidths(filteredOutputs, headers)
+	printTable(headers, filteredOutputs, columnWidths, rightAlignments)
+}
+
+func extractHeadersFromOutputs(outputs []map[string]interface{}) []string {
+	if len(outputs) == 0 {
+		return nil
+	}
+
+	var headers []string
+	for key := range outputs[0] {
+		headers = append(headers, key)
+	}
+	return headers
+}
+
+func filterOutputs(outputs []map[string]interface{}, filterColumn, filterString string) []map[string]interface{} {
+	if filterString == "" {
+		return outputs
+	}
+
+	var filtered []map[string]interface{}
 	for _, output := range outputs {
-		if filterString != "" {
-			value, _ := output[filterColumn].(string)
-			if !strings.HasPrefix(value, filterString) {
-				continue
-			}
-			//fmt.Fprintf(os.Stderr, "MATCH: >%v<\n", filterString)
-			/*
-						// hasPrefix which was used previously
-				// had the weird effect that
-				// on a list of
-				// VM 111
-				// VM 112
-				// VM9999
-				// if selected "VM " with a space, it matched
-				// even VM9999 even if there is no space
-				pos := strings.Index(value, filterString)
-				if pos == -1 || pos != 0 {
-					continue
-				}
-				fmt.Fprintf(os.Stderr, "MATCH: %v\n", value)
-			*/
+		if value, ok := output[filterColumn].(string); ok && strings.HasPrefix(value, filterString) {
+			filtered = append(filtered, output)
 		}
+	}
+	return filtered
+}
 
-		cols := []any{}
+func calculateColumnWidths(outputs []map[string]interface{}, headers []string) []int {
+	columnWidths := make([]int, len(headers))
+	for i, header := range headers {
+		columnWidths[i] = len(header)
+		for _, output := range outputs {
+			value := fmt.Sprintf("%v", output[header])
+			if len(value) > columnWidths[i] {
+				columnWidths[i] = len(value)
+			}
+		}
+	}
+	return columnWidths
+}
 
-		alignment_right := []bool{}
+func printTable(headers []string, outputs []map[string]interface{}, columnWidths []int, rightAlignments []string) {
+	var sb strings.Builder
 
+	// Header
+	for i, header := range headers {
+		sb.WriteString(formatColumn(strings.ToUpper(header), columnWidths[i], isRightAligned(header, rightAlignments)))
+	}
+	sb.WriteRune('\n')
+
+	// Rows
+	for _, output := range outputs {
 		for i, header := range headers {
-			value, ok := output[header]
-			if !ok {
-				value = ""
-			}
-			//defaultAlignment := defaultAlignments[i]
-			valueString, ok := value.(string)
-			if ok {
-				if len(valueString) > maxColSizes[i] {
-					maxColSizes[i] = len(valueString)
-				}
-				cols = append(cols, valueString)
-				if slices.Contains(rightAlignments, header) {
-					alignment_right = append(alignment_right, true)
-				} else {
-					alignment_right = append(alignment_right, false)
-				}
-				continue
-			}
-			valueInt64, ok := value.(int64)
-			if ok {
-				valueString := strconv.FormatInt(valueInt64, 10)
-				if len(valueString) > maxColSizes[i] {
-					maxColSizes[i] = len(valueString)
-				}
-				cols = append(cols, valueString)
-				alignment_right = append(alignment_right, true)
-				continue
-			}
-
-			valueFloat64, ok := value.(float64)
-			if !ok {
-				cols = append(cols, "")
-				continue
-			}
-			valueInt := int(valueFloat64)
-			valueString = strconv.Itoa(valueInt)
-
-			if len(valueString) > maxColSizes[i] {
-				maxColSizes[i] = len(valueString)
-			}
-			cols = append(cols, valueString)
-			alignment_right = append(alignment_right, true)
-
+			value := fmt.Sprintf("%v", output[header])
+			sb.WriteString(formatColumn(value, columnWidths[i], isRightAligned(header, rightAlignments)))
 		}
-		//fmt.Fprintf(os.Stderr, "%v\n", cols)
-		rows = append(rows, cols)
-		alignments = append(alignments, alignment_right)
+		sb.WriteRune('\n')
 	}
 
-	format := "%-" + strconv.Itoa(maxColSizes[0]) + "s"
-	for i := 1; i < len(maxColSizes); i++ {
-		alignment_right := alignments[0][i]
-		if alignment_right {
-			format = format + " %" + strconv.Itoa(maxColSizes[i]) + "s"
-		} else {
-			format = format + " %-" + strconv.Itoa(maxColSizes[i]) + "s"
-		}
+	fmt.Print(sb.String())
+}
+
+func formatColumn(value string, width int, rightAlign bool) string {
+	if rightAlign {
+		return fmt.Sprintf("%*s ", width, value)
 	}
-	format = format + "\n"
+	return fmt.Sprintf("%-*s ", width, value)
+}
 
-	headers2 := []any{}
-	for _, header := range headers {
-		headers2 = append(headers2, strings.ToUpper(header))
-	}
-
-	fmt.Fprintf(os.Stdout, format, headers2...)
-
-	for _, cols := range rows {
-		fmt.Fprintf(os.Stdout, format, cols...)
-	}
-
-	//colSize = len(headers)
-	//rowSize = len(outputs)
+func isRightAligned(header string, rightAlignments []string) bool {
+	return slices.Contains(rightAlignments, header)
 }
