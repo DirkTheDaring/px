@@ -9,7 +9,6 @@ import (
 	"os"
 	"px/api"
 	"px/configmap"
-	"px/etc"
 	"px/proxmox"
 	"px/queries"
 	"px/shared"
@@ -67,9 +66,15 @@ func (o *SnapshotDeleteOptions) Validate(args []string) error {
 func (o *SnapshotDeleteOptions) Run(args []string) error {
 	snapshotName := args[0]
 
+	DoSnapshotDelete(snapshotName, o.Match)
+
+	return nil
+}
+
+func DoSnapshotDelete(snapshotName string, match string) {
 	machines := GetSnapshotsAll()
 
-	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{o.Match, snapshotName})
+	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{match, snapshotName})
 	for _, filteredMachine := range filteredMachines {
 		node, ok := configmap.GetString(filteredMachine, "node")
 		if !ok {
@@ -90,12 +95,15 @@ func (o *SnapshotDeleteOptions) Run(args []string) error {
 		vmidInt64 := int64(vmid)
 		//name := filteredMachine["name"].(string)
 
-		machine, _ := etc.GlobalPxCluster.UniqueMachines[vmid]
-		status, _ := configmap.GetString(machine, "status")
-		if status != "stopped" {
-			fmt.Fprintf(os.Stderr, "ignoring snapshot '%v' on node '%v' for %v: machine is running!\n", snapshotName, node, name)
-			continue
-		}
+		/*
+			machine, _ := etc.GlobalPxCluster.UniqueMachines[vmid]
+			status, _ := configmap.GetString(machine, "status")
+
+				if status != "stopped" {
+					fmt.Fprintf(os.Stderr, "ignoring snapshot '%v' on node '%v' for %v: machine is running!\n", snapshotName, node, name)
+					continue
+				}
+		*/
 		fmt.Fprintf(os.Stderr, "delete snapshot '%v' on node '%v' for %v\n", snapshotName, node, name)
 		if _type == proxmox.PROXMOX_MACHINE_CT {
 			api.DeleteContainerSnapshot(node, vmidInt64, snapshotName)
@@ -105,5 +113,4 @@ func (o *SnapshotDeleteOptions) Run(args []string) error {
 			queries.WaitForVMUnlock(node, vmidInt64)
 		}
 	}
-	return nil
 }

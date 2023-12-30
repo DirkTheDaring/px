@@ -15,92 +15,64 @@ import (
 )
 
 func buildMappingTable(pxClients []etc.PxClient) (map[string]int, []string) {
-	lookup := make(map[string]int)
-	var nodeNames []string
+	nodeIndexMap := make(map[string]int)
+	var nodeList []string
 
-	for i, client := range pxClients {
+	for index, client := range pxClients {
 		for _, nodeName := range client.Nodes {
-			if _, exists := lookup[nodeName]; exists {
-				fmt.Fprintf(os.Stderr, "WARN: node %v on cluster %v excluded. Already in cluster %v\n", nodeName, client.OrigIndex, lookup[nodeName])
+			if existingIndex, exists := nodeIndexMap[nodeName]; exists {
+				fmt.Fprintf(os.Stderr, "WARN: Duplicate node '%v' found in clusters %v and %v\n", nodeName, index, existingIndex)
 				continue
 			}
-			lookup[nodeName] = i
-			nodeNames = append(nodeNames, nodeName)
+			nodeIndexMap[nodeName] = index
+			nodeList = append(nodeList, nodeName)
 		}
 	}
-	return lookup, nodeNames
+	return nodeIndexMap, nodeList
 }
 
 func buildMappingTableForMachines(pxClients []etc.PxClient) (map[int]map[string]interface{}, []map[string]interface{}) {
-	uniqueVMID := make(map[int]map[string]interface{})
-	var machines []map[string]interface{}
+	vmidMachineMap := make(map[int]map[string]interface{})
+	var machineList []map[string]interface{}
 
 	for _, client := range pxClients {
 		for _, machine := range client.Machines {
-			nodeName, okName := configmap.GetString(machine, "node")
-			vmid, okID := configmap.GetInt(machine, "vmid")
+			nodeName, okNode := configmap.GetString(machine, "node")
+			vmid, okVMID := configmap.GetInt(machine, "vmid")
 
-			if !okName || !okID {
-				fmt.Fprintf(os.Stderr, "Error retrieving 'node' or 'vmid' for machine: %v\n", machine)
+			if !okNode || !okVMID {
+				fmt.Fprintf(os.Stderr, "Error: 'node' or 'vmid' missing for machine: %v\n", machine)
 				continue
 			}
 
-			machines = append(machines, machine)
-			if existingMachine, exists := uniqueVMID[vmid]; exists {
-				fmt.Fprintf(os.Stderr, "WARN: VMID %v (%v) on node %v excluded. Already exists on node %v (%v)\n", vmid, machine["name"], nodeName, existingMachine["node"], existingMachine["name"])
+			if existingMachine, exists := vmidMachineMap[vmid]; exists {
+				fmt.Fprintf(os.Stderr, "WARN: VMID %v conflict between nodes '%v' and '%v'\n", vmid, nodeName, existingMachine["node"])
 				continue
 			}
-			uniqueVMID[vmid] = machine
+
+			vmidMachineMap[vmid] = machine
+			machineList = append(machineList, machine)
 		}
 	}
-	return uniqueVMID, machines
+	return vmidMachineMap, machineList
 }
 
 func ProcessCluster(pxClients []etc.PxClient) etc.PxCluster {
-	pxCluster := etc.PxCluster{}
+	pxCluster := etc.PxCluster{PxClients: pxClients}
 
-	pxCluster.PxClients = pxClients
+	nodeIndexMap, nodeList := buildMappingTable(pxClients)
+	pxCluster.PxClientLookup = nodeIndexMap
 
-	lookup, nodeNames := buildMappingTable(pxClients)
-	pxCluster.PxClientLookup = lookup
-	sort.Strings(nodeNames)
-	pxCluster.Nodes = nodeNames
+	sort.Strings(nodeList)
+	pxCluster.Nodes = nodeList
 
-	uniqueVMID, machines := buildMappingTableForMachines(pxClients)
-	pxCluster.UniqueMachines = uniqueVMID
+	vmidMachineMap, machines := buildMappingTableForMachines(pxClients)
+	pxCluster.UniqueMachines = vmidMachineMap
+
 	StringSortMachines(machines, []string{"name"}, []bool{true})
-
 	pxCluster.Machines = machines // not unique
+
 	return pxCluster
-}
-func PickClusterOld(configData map[string]interface{}, name string) int {
-
-	clusters, _ := configmap.GetInterfaceSliceValue(configData, "clusters")
-	max := len(clusters)
-
-	if max == 0 {
-		return -1
-	}
-	number64, err := strconv.ParseInt(name, 10, 32)
-	if err == nil {
-		number := int(number64)
-		if number < max && number >= 0 {
-			return number
-		} else {
-			return -1
-		}
-	}
-	for i, cluster := range clusters {
-		clusterName, ok := cluster["name"]
-		if !ok {
-			continue
-		}
-		if clusterName == name {
-			return i
-		}
-
-	}
-	return -1
 }
 
 func GetClusterIndex(configData map[string]interface{}, name string) (int, error) {

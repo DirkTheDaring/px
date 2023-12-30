@@ -60,36 +60,7 @@ func (o *SnapshotCreateOptions) Validate(args []string) error {
 }
 func (o *SnapshotCreateOptions) Run(args []string) error {
 	snapshotName := args[0]
-	if o.Match != "" {
-		machines := etc.GlobalPxCluster.Machines
-		filteredMachines := shared.FilterStringColumns(machines, []string{"name"}, []string{o.Match})
-		for _, filteredMachine := range filteredMachines {
-			node, ok := configmap.GetString(filteredMachine, "node")
-			if !ok {
-				continue
-			}
-			vmid, ok := configmap.GetInt(filteredMachine, "vmid")
-			if !ok {
-				continue
-			}
-			_type, ok := configmap.GetString(filteredMachine, "type")
-			if !ok {
-				continue
-			}
-			name, ok := configmap.GetString(filteredMachine, "name")
-			if !ok {
-				continue
-			}
-			vmidInt64 := int64(vmid)
-			fmt.Fprintf(os.Stderr, "create snapshot '%v' on node '%v' for %v\n", snapshotName, node, name)
-			if _type == "lxc" {
-				api.CreateContainerSnapshot(node, vmidInt64, snapshotName)
-			} else {
-				api.CreateVMSnapshot(node, vmidInt64, snapshotName)
-			}
-		}
-	}
-
+	DoSnapshotCreate(snapshotName, o.Match)
 	return nil
 }
 func init() {
@@ -107,4 +78,38 @@ func init() {
 	snapshotCreateCmd.Flags().StringVar(&snapshotCreateOptions.Match, "match", "", "match")
 	snapshotCreateCmd.Flags().StringVar(&snapshotCreateOptions.Node, "node", "", "node")
 	snapshotCreateCmd.Flags().IntVar(&snapshotCreateOptions.Vmid, "vmid", 0, "vmid")
+}
+
+func DoSnapshotCreate(snapshotName string, match string) {
+	if match == "" {
+		return
+	}
+	machines := etc.GlobalPxCluster.Machines
+	filteredMachines := shared.FilterStringColumns(machines, []string{"name"}, []string{match})
+	for _, filteredMachine := range filteredMachines {
+		node, ok := configmap.GetString(filteredMachine, "node")
+		if !ok {
+			continue
+		}
+		vmid, ok := configmap.GetInt(filteredMachine, "vmid")
+		if !ok {
+			continue
+		}
+		_type, ok := configmap.GetString(filteredMachine, "type")
+		if !ok {
+			continue
+		}
+		name, ok := configmap.GetString(filteredMachine, "name")
+		if !ok {
+			continue
+		}
+		vmidInt64 := int64(vmid)
+		fmt.Fprintf(os.Stderr, "create snapshot '%v' on node '%v' for %v\n", snapshotName, node, name)
+		if _type == "lxc" {
+			api.CreateContainerSnapshot(node, vmidInt64, snapshotName)
+		} else {
+			api.CreateVMSnapshot(node, vmidInt64, snapshotName)
+		}
+	}
+
 }

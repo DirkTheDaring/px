@@ -1,8 +1,16 @@
 package queries
 
-import(
+import (
+	"context"
+	"fmt"
+	"os"
+	"px/configmap"
+	"px/etc"
+	"sort"
+
+	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
-/*
+
 func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
 	_, r, err := apiClient.ClusterAPI.GetClusterConfigNodes(context).Execute()
 	// {
@@ -29,16 +37,15 @@ func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Conte
 		return nil
 	}
 	//resources := clusterResourcesResponse.GetData()
-	restResponse := shared.ConvertJsonHttpResponseToMap(r)
+	restResponse, err := ConvertJsonHttpResponseToMap2(r)
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
 	//json := configmap.DataToJSON(restResponse)
 	//fmt.Fprintf(os.Stdout, "%s\n", json)
 	return restResponse
 }
 
-/*
-func GetClusterNodes(pxClients []shared.PxClient) []shared.PxClient {
-	list := []shared.PxClient{}
+func GetClusterNodes(pxClients []etc.PxClient) []etc.PxClient {
+	list := []etc.PxClient{}
 	for _, pxClient := range pxClients {
 		nodeList := []string{}
 		result := GetClusterConfigNodes(pxClient.ApiClient, pxClient.Context)
@@ -61,5 +68,11 @@ func GetClusterNodes(pxClients []shared.PxClient) []shared.PxClient {
 	}
 	return list
 }
-*/
 
+func DumpClusterNodes2(pxClients []etc.PxClient) {
+
+	for _, pxClient := range pxClients {
+		result := GetClusterConfigNodes(pxClient.ApiClient, pxClient.Context)
+		fmt.Fprintf(os.Stderr, "%s\n", result)
+	}
+}

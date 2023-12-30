@@ -30,26 +30,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("stop called")
-		machines := etc.GlobalPxCluster.Machines
-
-		if stopOptions.Match != "" {
-			filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{stopOptions.Match, "running"})
-			for _, filteredMachine := range filteredMachines {
-				//fmt.Fprintf(os.Stderr, "%v %v\n", filteredMachine["vmid"], filteredMachine["status"])
-				node := filteredMachine["node"].(string)
-				vmid := filteredMachine["vmid"].(float64)
-				name := filteredMachine["name"].(string)
-				_type := filteredMachine["type"].(string)
-				vmidInt64 := int64(vmid)
-				fmt.Fprintf(os.Stderr, "stop: %v %v %v %v\n", node, vmidInt64, name, _type)
-				if _type == "lxc" {
-					api.StopContainer(node, vmidInt64)
-				} else {
-					api.StopVM(node, vmidInt64)
-				}
-			}
-		}
+		DoStep(stopOptions.Match)
 	},
 }
 
@@ -66,4 +47,28 @@ func init() {
 	// is called directly, e.g.:
 	// stopCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	stopCmd.Flags().StringVar(&stopOptions.Match, "match", "", "match")
+}
+
+func DoStep(match string) {
+	machines := etc.GlobalPxCluster.Machines
+
+	if match == "" {
+		return
+	}
+	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "running"})
+	for _, filteredMachine := range filteredMachines {
+		//fmt.Fprintf(os.Stderr, "%v %v\n", filteredMachine["vmid"], filteredMachine["status"])
+		node := filteredMachine["node"].(string)
+		vmid := filteredMachine["vmid"].(float64)
+		name := filteredMachine["name"].(string)
+		_type := filteredMachine["type"].(string)
+		vmidInt64 := int64(vmid)
+		fmt.Fprintf(os.Stderr, "stop: %v %v %v %v\n", node, vmidInt64, name, _type)
+		if _type == "lxc" {
+			api.StopContainer(node, vmidInt64)
+		} else {
+			api.StopVM(node, vmidInt64)
+		}
+	}
+
 }

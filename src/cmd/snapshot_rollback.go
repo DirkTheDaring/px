@@ -62,10 +62,14 @@ func (o *SnapshotRollbackOptions) Validate(args []string) error {
 
 func (o *SnapshotRollbackOptions) Run(args []string) error {
 	snapshotName := args[0]
+	DoSnapshotRollback(snapshotName, o.Match)
+	return nil
+}
 
+func DoSnapshotRollback(snapshotName string, match string) {
 	machines := GetSnapshotsAll()
 
-	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{o.Match, snapshotName})
+	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{match, snapshotName})
 	for _, filteredMachine := range filteredMachines {
 		node, ok := configmap.GetString(filteredMachine, "node")
 		if !ok {
@@ -107,5 +111,5 @@ func (o *SnapshotRollbackOptions) Run(args []string) error {
 			queries.WaitForVMUnlock(node, vmidInt64)
 		}
 	}
-	return nil
+
 }
