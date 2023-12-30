@@ -381,7 +381,7 @@ func DoFlash(kind string, spec map[string]interface{}, node string) {
 	}
 
 	vmid := DetermineVmid(spec, "qemu")
-	if !vmidExists(vmid) {
+	if etc.GlobalPxCluster.Exists(node, int64(vmid)) {
 		return
 	}
 
@@ -433,11 +433,6 @@ func DoFlash(kind string, spec map[string]interface{}, node string) {
 	}
 
 	queries.ResizeVMDisk(node, vmid, storageDrive, diff)
-}
-
-func vmidExists(vmid int) bool {
-	_, found := etc.GlobalPxCluster.UniqueMachines[vmid]
-	return found
 }
 
 func getVMConfigData(node string, vmid int) (map[string]interface{}, error) {

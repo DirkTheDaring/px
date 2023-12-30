@@ -49,7 +49,7 @@ func init() {
 
 func DoShutdown(match string) {
 
-	machines := etc.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.GetMachines()
 
 	if match == "" {
 		return

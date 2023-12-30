@@ -23,13 +23,11 @@ func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, filt
 	}
 
 	filteredOutputs, _ := filterOutputs(outputs, filterColumn, filterString)
+
 	if len(filteredOutputs) == 0 {
 		return
 	}
 
-	// emptyor patial complete right alignments
-	//if len(rightAlignments) < len(headers) {
-	//fmt.Fprintf(os.Stderr, "rightAlignments: %v\n", rightAlignments)
 	if rightAlignments == nil {
 		rightAlignments = determineRightAlignments(filteredOutputs, headers)
 	}
@@ -124,15 +122,6 @@ func GenerateTableString(headers []string, outputs []map[string]interface{}, col
 		for i, header := range headers {
 
 			value := fmt.Sprintf("%v", output[header])
-			/*
-				// FIXME hack
-				if header == "snaptime" {
-					epoch := int64(output[header].(float64))
-					t := time.Unix(epoch, 0) // The second parameter is nanoseconds
-					humanReadable := t.Format("2006-01-02 15:04:05")
-					value = fmt.Sprintf("%s", humanReadable)
-				}
-			*/
 			sb.WriteString(formatColumn(value, columnWidths[i], isRightAligned(header, rightAlignments)))
 		}
 		sb.WriteString(lineEnding)

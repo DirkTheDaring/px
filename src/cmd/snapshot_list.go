@@ -70,7 +70,7 @@ func ConvertEpochToDateTime(epoch int64) string {
 }
 
 func GetSnapshotsAll() []map[string]interface{} {
-	machines := etc.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.GetMachines()
 
 	//fmt.Fprintf(os.Stderr, "CALL\n")
 	list := []map[string]interface{}{}

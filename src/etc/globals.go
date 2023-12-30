@@ -6,6 +6,7 @@ import (
 	"os"
 	"px/configmap"
 	"px/proxmox/query"
+	"strconv"
 	"strings"
 
 	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
@@ -31,8 +32,8 @@ type PxCluster struct {
 	PxClients      []PxClient
 	PxClientLookup map[string]int
 	Nodes          []string
-	UniqueMachines map[int]map[string]interface{}
-	Machines       []map[string]interface{}
+	uniqueMachines map[string]map[string]interface{}
+	machines       []map[string]interface{}
 }
 
 // --------------------------------------------------------------
@@ -41,6 +42,17 @@ var GlobalPxCluster PxCluster
 var GlobalConfigData map[string]interface{}
 
 // --------------------------------------------------------------
+
+func (p *PxCluster) GetMachines() []map[string]interface{} {
+	return GlobalPxCluster.machines
+}
+
+func (pxCluster PxCluster) Exists(node string, vmid int64) bool {
+	key := node + "/" + strconv.FormatInt(vmid, 10)
+
+	_, ok := pxCluster.uniqueMachines[key]
+	return ok
+}
 
 func InOrSkipIfEmpty(haystack []string, needle string) bool {
 	// we have the needle if the haystack is empty ...

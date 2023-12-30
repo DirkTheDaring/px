@@ -14,67 +14,6 @@ import (
 	"strings"
 )
 
-func buildMappingTable(pxClients []etc.PxClient) (map[string]int, []string) {
-	nodeIndexMap := make(map[string]int)
-	var nodeList []string
-
-	for index, client := range pxClients {
-		for _, nodeName := range client.Nodes {
-			if existingIndex, exists := nodeIndexMap[nodeName]; exists {
-				fmt.Fprintf(os.Stderr, "WARN: Duplicate node '%v' found in clusters %v and %v\n", nodeName, index, existingIndex)
-				continue
-			}
-			nodeIndexMap[nodeName] = index
-			nodeList = append(nodeList, nodeName)
-		}
-	}
-	return nodeIndexMap, nodeList
-}
-
-func buildMappingTableForMachines(pxClients []etc.PxClient) (map[int]map[string]interface{}, []map[string]interface{}) {
-	vmidMachineMap := make(map[int]map[string]interface{})
-	var machineList []map[string]interface{}
-
-	for _, client := range pxClients {
-		for _, machine := range client.Machines {
-			nodeName, okNode := configmap.GetString(machine, "node")
-			vmid, okVMID := configmap.GetInt(machine, "vmid")
-
-			if !okNode || !okVMID {
-				fmt.Fprintf(os.Stderr, "Error: 'node' or 'vmid' missing for machine: %v\n", machine)
-				continue
-			}
-
-			if existingMachine, exists := vmidMachineMap[vmid]; exists {
-				fmt.Fprintf(os.Stderr, "WARN: VMID %v conflict between nodes '%v' and '%v'\n", vmid, nodeName, existingMachine["node"])
-				continue
-			}
-
-			vmidMachineMap[vmid] = machine
-			machineList = append(machineList, machine)
-		}
-	}
-	return vmidMachineMap, machineList
-}
-
-func ProcessCluster(pxClients []etc.PxClient) etc.PxCluster {
-	pxCluster := etc.PxCluster{PxClients: pxClients}
-
-	nodeIndexMap, nodeList := buildMappingTable(pxClients)
-	pxCluster.PxClientLookup = nodeIndexMap
-
-	sort.Strings(nodeList)
-	pxCluster.Nodes = nodeList
-
-	vmidMachineMap, machines := buildMappingTableForMachines(pxClients)
-	pxCluster.UniqueMachines = vmidMachineMap
-
-	StringSortMachines(machines, []string{"name"}, []bool{true})
-	pxCluster.Machines = machines // not unique
-
-	return pxCluster
-}
-
 func GetClusterIndex(configData map[string]interface{}, name string) (int, error) {
 	clusters, err := configmap.GetInterfaceSliceValue(configData, "clusters")
 	if err != nil {
@@ -427,7 +366,7 @@ func StringFilter(mapList []map[string]interface{}, key string, value string) []
 
 }
 func GetMachinesByName(name string) []map[string]interface{} {
-	return StringFilter(etc.GlobalPxCluster.Machines, "name", name)
+	return StringFilter(etc.GlobalPxCluster.GetMachines(), "name", name)
 }
 
 func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, error) {

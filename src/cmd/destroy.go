@@ -60,7 +60,7 @@ func DoDestroy(match string) {
 	}
 
 	// Retrieve the list of machines from the global cluster.
-	machines := etc.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.GetMachines()
 
 	// Filter out machines that match the criteria and are not stopped.
 	// This also reports machines that are excluded because they are stopped.

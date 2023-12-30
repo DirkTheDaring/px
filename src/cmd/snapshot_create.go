@@ -47,9 +47,11 @@ func (o *SnapshotCreateOptions) Validate(args []string) error {
 	if o.Vmid != 0 && !InProxmoxVmidRange(o.Vmid) {
 		return errors.New(fmt.Sprintf("vmid not in range: %v\n", o.Vmid))
 	}
+	/* FIXME now in the context of node/vmid
 	if o.Vmid != 0 && etc.GlobalPxCluster.UniqueMachines[o.Vmid] == nil {
 		return errors.New(fmt.Sprintf("vmid does not exist: %v\n", o.Vmid))
 	}
+	*/
 	if len(args) == 0 {
 		return errors.New(fmt.Sprintf("please specifiy snapshot name\n"))
 	}
@@ -84,7 +86,7 @@ func DoSnapshotCreate(snapshotName string, match string) {
 	if match == "" {
 		return
 	}
-	machines := etc.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.GetMachines()
 	filteredMachines := shared.FilterStringColumns(machines, []string{"name"}, []string{match})
 	for _, filteredMachine := range filteredMachines {
 		node, ok := configmap.GetString(filteredMachine, "node")

@@ -50,7 +50,7 @@ func init() {
 
 }
 func DoStart(match string) {
-	machines := etc.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.GetMachines()
 
 	if match == "" {
 		return

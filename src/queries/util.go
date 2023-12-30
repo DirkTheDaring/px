@@ -9,7 +9,7 @@ import (
 )
 
 func getSubset(filterString string, machine_type string) []map[string]interface{} {
-	machines := etc.GlobalPxCluster.Machines
+	machines := etc.GlobalPxCluster.GetMachines()
 
 	filterColumn := "name"
 

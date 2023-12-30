@@ -528,6 +528,8 @@ func updateCT(machine map[string]interface{}, node string, vmid int, newConfig m
 	return nil
 }
 
+// FIXME it should be unique over the vmid, which is not deteactable
+// if you just look into the hashmap which is node/vmid nowadays
 func generateClusterId(node string) (int64, error) {
 	if len(etc.GlobalPxCluster.PxClients) <= 1 {
 		return api.GetClusterNextId(node)
@@ -538,7 +540,13 @@ func generateClusterId(node string) (int64, error) {
 
 	for offset := 0; offset < 1000; offset++ {
 		vmid := formula + offset
-		if _, found := etc.GlobalPxCluster.UniqueMachines[vmid]; !found {
+		/*
+			if _, found := etc.GlobalPxCluster.UniqueMachines[vmid]; !found {
+				return int64(vmid), nil
+			}
+		*/
+
+		if !etc.GlobalPxCluster.Exists(node, int64(vmid)) {
 			return int64(vmid), nil
 		}
 	}
@@ -551,8 +559,7 @@ func createVMID(_type string, spec map[string]interface{}, node string) (int, bo
 
 	vmid := DetermineVmid(spec, _type)
 	if vmid != 0 {
-		_, found := etc.GlobalPxCluster.UniqueMachines[vmid]
-		if !found {
+		if !etc.GlobalPxCluster.Exists(node, int64(vmid)) {
 			createVM = true
 		}
 	}

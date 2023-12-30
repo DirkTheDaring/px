@@ -109,7 +109,7 @@ func processMachine(machine map[string]interface{}, list *[]map[string]interface
 
 func dump_macaddr() {
 	var machineList []map[string]interface{}
-	for _, machine := range etc.GlobalPxCluster.Machines {
+	for _, machine := range etc.GlobalPxCluster.GetMachines() {
 		processMachine(machine, &machineList)
 	}
 

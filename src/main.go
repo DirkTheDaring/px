@@ -201,7 +201,7 @@ func initConfig() {
 	//pxClients = ProcessAliases(pxClients, clusterNodes)
 
 	// All vmids are assigned (and duplicates excluded)
-	etc.GlobalPxCluster = shared.ProcessCluster(pxClients)
+	etc.GlobalPxCluster = etc.ProcessCluster(pxClients)
 
 	//fmt.Fprintf(os.Stderr, "******************** Init ended\n")
 }
