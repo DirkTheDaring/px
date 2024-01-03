@@ -16,6 +16,7 @@ import (
 
 type DestroyOptions struct {
 	Match string
+	Yes   bool
 }
 
 var destroyOptions = &DestroyOptions{}
@@ -31,29 +32,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		DoDestroy(destroyOptions.Match)
+		DoDestroy(destroyOptions.Match, destroyOptions.Yes)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(destroyCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// destroyCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// destroyCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	destroyCmd.Flags().StringVar(&destroyOptions.Match, "match", "", "match")
-
+	destroyCmd.Flags().BoolVarP(&destroyOptions.Yes, "yes", "y", false, "destroy withouth asking")
 }
 
 // DoDestroy removes machines that match the specified criteria.
 // It prints the details of the machines being destroyed.
-func DoDestroy(match string) {
+func DoDestroy(match string, confirmed bool) {
 	// Early exit if match is empty, as no machines would be matched.
 	if match == "" {
 		return
@@ -62,9 +54,14 @@ func DoDestroy(match string) {
 	// Retrieve the list of machines from the global cluster.
 	machines := etc.GlobalPxCluster.GetMachines()
 
+	// Handle match as it is special
+	machines = shared.SelectMachines(machines, match)
+
 	// Filter out machines that match the criteria and are not stopped.
 	// This also reports machines that are excluded because they are stopped.
-	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "stopped"})
+	//filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "stopped"})
+
+	filteredMachines := shared.FilterStringColumns(machines, []string{"status"}, []string{"stopped"})
 
 	// Iterate over the filtered machines to destroy them.
 	for _, machine := range filteredMachines {
@@ -79,14 +76,19 @@ func DoDestroy(match string) {
 			continue
 		}
 
-		// Log the details of the machine being destroyed.
-		fmt.Fprintf(os.Stderr, "destroy: %v %v %v %v\n", node, int64(vmid), name, machineType)
-
 		// Destroy the machine based on its type.
-		if machineType == "lxc" {
-			api.DeleteContainer(node, int64(vmid))
+		if confirmed {
+			// Log the details of the machine being destroyed.
+			fmt.Fprintf(os.Stderr, "destroy: %v %v %v %v\n", node, int64(vmid), name, machineType)
+			if machineType == "lxc" {
+				api.DeleteContainer(node, int64(vmid))
+			} else {
+				api.DeleteVM(node, int64(vmid))
+			}
+
 		} else {
-			api.DeleteVM(node, int64(vmid))
+			fmt.Fprintf(os.Stderr, "ignored destroy (-y missing?): %v %v %v %v\n", node, int64(vmid), name, machineType)
 		}
+
 	}
 }

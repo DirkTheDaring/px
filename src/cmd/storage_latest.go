@@ -36,7 +36,7 @@ to quickly create a Cobra application.`,
 		newStorageContent := shared.JoinClusterAndSelector(etc.GlobalPxCluster, selectors)
 		newStorageContent = shared.ExtractLatest(etc.GlobalPxCluster, newStorageContent)
 		headers := []string{"label", "volid", "node"}
-		shared.RenderOnConsole(newStorageContent, headers, "", "")
+		shared.RenderOnConsoleNew(newStorageContent, headers, nil)
 	},
 }
 

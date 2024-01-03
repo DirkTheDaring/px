@@ -50,12 +50,16 @@ func init() {
 
 }
 func DoStart(match string) {
-	machines := etc.GlobalPxCluster.GetMachines()
-
 	if match == "" {
 		return
 	}
-	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "stopped"})
+
+	machines := etc.GlobalPxCluster.GetMachines()
+	// Handle match as it is special
+	machines = shared.SelectMachines(machines, match)
+
+	//filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "stopped"})
+	filteredMachines := shared.FilterStringColumns(machines, []string{"status"}, []string{"stopped"})
 	for _, filteredMachine := range filteredMachines {
 		//fmt.Fprintf(os.Stderr, "%v %v\n", filteredMachine["vmid"], filteredMachine["status"])
 		node := filteredMachine["node"].(string)

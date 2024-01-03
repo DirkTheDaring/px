@@ -118,7 +118,6 @@ func FilterStorageByNodeName(storageSlice []map[string]interface{}, nodeName str
 }
 
 func initConfig() {
-
 	//fmt.Fprintf(os.Stderr, "initConfig() clustername: %v\n", cmd.ClusterName)
 	etc.GlobalConfigData = clusters.GetSystemConfiguration()
 	clusterIndex, err := shared.GetClusterIndex(etc.GlobalConfigData, cmd.ClusterName)
@@ -130,9 +129,7 @@ func initConfig() {
 	cluster := clusters[clusterIndex]
 	clusterNodes, _ := configmap.GetInterfaceSliceValue(cluster, "nodes")
 
-	//fmt.Fprintf(os.Stdout, "result: %v\n", cluster["name"])
 	var timeout time.Duration = time.Millisecond * time.Duration(configmap.GetIntWithDefault(cluster, "timeout", 500))
-	//fmt.Fprintf(os.Stderr, "timeout: %v\n", timeout)
 
 	pxClients := authentication.LoginClusterNodes(clusterNodes, timeout)
 	pxClients = AddClusterResources(pxClients)
@@ -144,8 +141,6 @@ func initConfig() {
 	clusterAliases := configmap.GetMapEntryWithDefault(cluster, "aliases", map[string]interface{}{})
 
 	for _, pxClient := range pxClients {
-		//fmt.Fprintf(os.Stderr, "cluster nodes: %v\n", pxClient.Nodes)
-		//fmt.Fprintf(os.Stderr, "initConfig() nodeConfig: %v\n", pxClient.OrigIndex)
 		nodeConfig := clusterNodes[pxClient.OrigIndex]
 
 		vars := configmap.GetMapEntryWithDefault(nodeConfig, "vars", map[string]interface{}{})
@@ -162,13 +157,11 @@ func initConfig() {
 			// FIXME
 			continue
 		}
-		//fmt.Fprintf(os.Stderr, "initConfig() storageResponse: %v\n", storageResponse)
 		storageSlice, _ := configmap.GetInterfaceSliceValue(storageResponse, "data")
 		pxClient.Storage = storageSlice
 
 		storageAliases := map[string]interface{}{}
 		for _, node := range pxClient.Nodes {
-			//fmt.Fprintf(os.Stderr, "Process Node: %v\n", node)
 			localStorage := FilterStorageByNodeName(storageSlice, node)
 			sort.Strings(localStorage)
 			keys := []string{}
@@ -192,17 +185,12 @@ func initConfig() {
 		list = append(list, pxClient)
 	}
 	pxClients = list
-	//GetClusterNodes(pxClients)
 
 	// Add Storage
 	pxClients = AssignStorage(pxClients)
 
-	// Add Storage Alias Mappings
-	//pxClients = ProcessAliases(pxClients, clusterNodes)
-
 	// All vmids are assigned (and duplicates excluded)
 	etc.GlobalPxCluster = etc.ProcessCluster(pxClients)
-
 	//fmt.Fprintf(os.Stderr, "******************** Init ended\n")
 }
 

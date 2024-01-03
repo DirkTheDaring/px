@@ -9,6 +9,7 @@ import (
 	"os"
 	"px/api"
 	"px/configmap"
+	"px/etc"
 	"px/proxmox"
 	"px/queries"
 	"px/shared"
@@ -72,9 +73,14 @@ func (o *SnapshotDeleteOptions) Run(args []string) error {
 }
 
 func DoSnapshotDelete(snapshotName string, match string) {
-	machines := GetSnapshotsAll()
+	machines := etc.GlobalPxCluster.GetMachines()
+	machines = GetSnapshotsAll(machines)
 
-	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{match, snapshotName})
+	// Handle match as it is special
+	machines = shared.SelectMachines(machines, match)
+
+	//filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{match, snapshotName})
+	filteredMachines := shared.FilterStringColumns(machines, []string{"snapshot"}, []string{snapshotName})
 	for _, filteredMachine := range filteredMachines {
 		node, ok := configmap.GetString(filteredMachine, "node")
 		if !ok {

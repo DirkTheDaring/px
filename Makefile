@@ -29,6 +29,7 @@ release:
 	@echo "Building release $(BINARY_NAME)..."
 	@mkdir -p $(RELEASE_DIR)
 	cd $(SRC_DIR) && GOARCH=amd64 GOOS=linux   $(GO) build -o ../$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64 .
+	cd $(SRC_DIR) && GOARCH=arm64 GOOS=linux   $(GO) build -o ../$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_arm64 .
 	cd $(SRC_DIR) && GOARCH=amd64 GOOS=darwin  $(GO) build -o ../$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64 .
 	cd $(SRC_DIR) && GOARCH=amd64 GOOS=windows $(GO) build -o ../$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64.exe .
 
@@ -36,6 +37,7 @@ release:
 publish: release
 	github-release -vvv release  -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "Release $(VERSION)" && sleep 5
 	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_linux_amd64" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64
+	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_linux_arm64" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_arm64
 	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_darwin_amd64" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64
 	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_windows_amd64.exe" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64.exe
 

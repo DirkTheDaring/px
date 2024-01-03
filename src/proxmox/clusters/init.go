@@ -46,7 +46,7 @@ func FindConfigFile() string {
 	}
 	configDir := FindConfigDir(workingDirectory)
 	if configDir == "" {
-		fmt.Fprintf(os.Stderr, "config  dir not found.")
+		fmt.Fprintf(os.Stderr, "config dir not found: %s\n", configDir)
 		os.Exit(1)
 	}
 	//fmt.Fprintf(os.Stderr, "configDir: %s\n", configDir)

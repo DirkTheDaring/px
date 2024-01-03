@@ -9,6 +9,7 @@ import (
 	"os"
 	"px/api"
 	"px/configmap"
+	"px/etc"
 	"px/proxmox"
 	"px/queries"
 	"px/shared"
@@ -67,7 +68,12 @@ func (o *SnapshotRollbackOptions) Run(args []string) error {
 }
 
 func DoSnapshotRollback(snapshotName string, match string) {
-	machines := GetSnapshotsAll()
+	machines := etc.GlobalPxCluster.GetMachines()
+
+	// Handle match as it is special
+	machines = shared.SelectMachines(machines, match)
+
+	machines = GetSnapshotsAll(machines)
 
 	filteredMachines := shared.FilterStringColumns(machines, []string{"name", "snapshot"}, []string{match, snapshotName})
 	for _, filteredMachine := range filteredMachines {

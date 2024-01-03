@@ -87,7 +87,10 @@ func DoSnapshotCreate(snapshotName string, match string) {
 		return
 	}
 	machines := etc.GlobalPxCluster.GetMachines()
-	filteredMachines := shared.FilterStringColumns(machines, []string{"name"}, []string{match})
+
+	// Handle match as it is special
+	filteredMachines := shared.SelectMachines(machines, match)
+
 	for _, filteredMachine := range filteredMachines {
 		node, ok := configmap.GetString(filteredMachine, "node")
 		if !ok {

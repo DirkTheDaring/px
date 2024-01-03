@@ -33,7 +33,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		DoSnapshotList()
+		DoSnapshotList(snapshotListOptions.Match)
 	},
 }
 
@@ -51,14 +51,19 @@ func init() {
 	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	snapshotListCmd.Flags().StringVar(&snapshotListOptions.Match, "match", "", "match")
 }
-func DoSnapshotList() {
+func DoSnapshotList(match string) {
 	//fmt.Println("snapshot list called")
 
-	snapshots := GetSnapshotsAll()
+	machines := etc.GlobalPxCluster.GetMachines()
+
+	snapshots := GetSnapshotsAll(machines)
+	// Handle match as it is special
+	machines = shared.SelectMachines(machines, match)
+
 	headers := []string{"snapshot", "type", "parent", "node", "vmid", "name", "snaptime"}
 	snapshots = shared.StringSortMachines(snapshots, []string{"snapshot", "node", "name"}, []bool{true, true, true})
 
-	shared.RenderOnConsole(snapshots, headers, "name", snapshotListOptions.Match)
+	shared.RenderOnConsoleWithFilter(snapshots, headers, "name", snapshotListOptions.Match)
 
 }
 
@@ -69,8 +74,7 @@ func ConvertEpochToDateTime(epoch int64) string {
 	return value
 }
 
-func GetSnapshotsAll() []map[string]interface{} {
-	machines := etc.GlobalPxCluster.GetMachines()
+func GetSnapshotsAll(machines []map[string]interface{}) []map[string]interface{} {
 
 	//fmt.Fprintf(os.Stderr, "CALL\n")
 	list := []map[string]interface{}{}

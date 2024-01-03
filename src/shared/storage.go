@@ -11,6 +11,7 @@ func StorageList() {
 
 	headers := []string{"storage", "type", "path", "node"}
 	storage = StringSortMachines(storage, []string{"storage"}, []bool{true})
-	RenderOnConsole(storage, headers, "", "")
+
+	RenderOnConsoleNew(storage, headers, nil)
 	os.Exit(0)
 }

@@ -31,7 +31,7 @@ to quickly create a Cobra application.`,
 		fmt.Println("storage content called")
 		storageContent := etc.GlobalPxCluster.GetStorageContent()
 		headers := []string{"storage", "node", "type", "content", "volid"}
-		shared.RenderOnConsole(storageContent, headers, "", "")
+		shared.RenderOnConsoleNew(storageContent, headers, nil)
 
 	},
 }

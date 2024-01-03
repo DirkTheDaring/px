@@ -114,5 +114,6 @@ func dump_macaddr() {
 	}
 
 	headers := []string{"macaddr", "net", "node", "vmid", "name"}
-	shared.RenderOnConsole(machineList, headers, "name", "")
+	shared.RenderOnConsoleNew(machineList, headers, nil)
+
 }

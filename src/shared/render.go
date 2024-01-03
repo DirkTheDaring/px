@@ -8,12 +8,16 @@ import (
 )
 
 // RenderOnConsole displays data in a table format on the console.
-func RenderOnConsole(outputs []map[string]interface{}, headers []string, filterColumn, filterString string) {
-	RenderOnConsoleNew(outputs, headers, filterColumn, filterString, nil)
+func RenderOnConsoleWithFilter(outputs []map[string]interface{}, headers []string, filterColumn, filterString string) {
+	if len(outputs) == 0 {
+		return
+	}
+	filteredOutputs, _ := filterOutputs(outputs, filterColumn, filterString)
+
+	RenderOnConsoleNew(filteredOutputs, headers, nil)
 }
 
-// RenderOnConsoleNew is an enhanced version of RenderOnConsole with right alignment options.
-func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, filterColumn, filterString string, rightAlignments []string) {
+func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, rightAlignments []string) {
 	if len(outputs) == 0 {
 		return
 	}
@@ -22,17 +26,13 @@ func RenderOnConsoleNew(outputs []map[string]interface{}, headers []string, filt
 		headers = extractHeadersFromOutputs(outputs)
 	}
 
-	filteredOutputs, _ := filterOutputs(outputs, filterColumn, filterString)
-
-	if len(filteredOutputs) == 0 {
-		return
-	}
-
 	if rightAlignments == nil {
-		rightAlignments = determineRightAlignments(filteredOutputs, headers)
+		rightAlignments = determineRightAlignments(outputs, headers)
 	}
-	columnWidths := calculateColumnWidths(filteredOutputs, headers)
-	PrintTable(headers, filteredOutputs, columnWidths, rightAlignments)
+
+	columnWidths := calculateColumnWidths(outputs, headers)
+
+	PrintTable(headers, outputs, columnWidths, rightAlignments)
 }
 
 func extractHeadersFromOutputs(outputs []map[string]interface{}) []string {

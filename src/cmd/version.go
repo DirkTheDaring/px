@@ -1,16 +1,17 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
-	"fmt"
 	"embed"
+	"fmt"
 	"io/fs"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
+
 //go:embed VERSION.txt
 var versionFS embed.FS
 
@@ -25,14 +26,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//fmt.Println("version called")
 
-		version, err := fs.ReadFile(versionFS, "VERSION.txt")
-
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("px version:", string(version))
+		DoVersion()
 	},
 }
 
@@ -48,4 +43,23 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+// DoVersion reads the version number from a file and prints it.
+func DoVersion() error {
+	// Read the version file
+	version, err := fs.ReadFile(versionFS, "VERSION.txt")
+	if err != nil {
+		// Return the error instead of panicking
+		return err
+	}
+
+	// Split the version string and get the first line
+	versionArray := strings.Split(string(version), "\n")
+	firstLine := versionArray[0]
+
+	// Print the version number
+	fmt.Println("px version:", firstLine)
+
+	return nil
 }
