@@ -48,7 +48,11 @@ func (p *PxCluster) GetMachines() []map[string]interface{} {
 }
 
 func (pxCluster PxCluster) Exists(node string, vmid int64) bool {
+
 	key := node + "/" + strconv.FormatInt(vmid, 10)
+
+	//fmt.Fprintf(os.Stderr, "key=%v\n", key)
+	//fmt.Fprintf(os.Stderr, "hash=%+v\n", pxCluster.uniqueMachines)
 
 	_, ok := pxCluster.uniqueMachines[key]
 	return ok

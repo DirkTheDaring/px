@@ -24,3 +24,23 @@ This tool was created out of the need to manage lab systems:
 persistent_modules:
   - modulea
   - moduleb
+
+# Setup ignition
+edit the file on each node /etc/pve/storage.cfg
+add the followingentry
+
+dir: ignition
+        path /etc/pve/ignition
+        content iso,vztmpl,snippets
+        prune-backups keep-all=1
+        shared 1
+
+mkdir -p /etc/pve/ignition (will be synced over clusters)
+
+# Setup images dir (required)
+
+# Add images to the content line
+dir: local
+        path /var/lib/vz
+        content backup,vztmpl,iso,images
+

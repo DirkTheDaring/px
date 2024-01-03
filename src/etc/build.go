@@ -5,6 +5,7 @@ import (
 	"os"
 	"px/configmap"
 	"sort"
+	"strconv"
 )
 
 func buildMappingTable(pxClients []PxClient) (map[string]int, []string) {
@@ -48,7 +49,8 @@ func buildMappingTableForMachines(pxClients []PxClient) (map[string]map[string]i
 				}
 
 			}
-			keyStr := fmt.Sprintf("%s/%s", nodeName, vmid)
+			vmidStr := strconv.FormatInt(int64(vmid), 10)
+			keyStr := fmt.Sprintf("%s/%s", nodeName, vmidStr)
 
 			vmidMachineMapInternal[vmid] = machine
 			vmidMachineMap[keyStr] = machine
