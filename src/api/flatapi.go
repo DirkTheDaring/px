@@ -1090,6 +1090,17 @@ func GetNodeTaskStatus(node string, upid string) (*pxapiflat.GetNodeTaskStatus20
 	}
 	resp, r, err := apiClient.NodesAPI.GetNodeTaskStatus(context, node, upid).Execute()
 	if err != nil {
+		// HACK fix for promox 7
+		if fmt.Sprintf("%v", err) == "json: cannot unmarshal array into Go struct field GetNodeTaskStatus200Response.data of type pxapiflat.GetNodeTaskStatus200ResponseData" {
+			//fmt.Fprintf(os.Stderr, "Body:\n%s\n", r.Body)
+			response := pxapiflat.GetNodeTaskStatus200Response{}
+			responseData := pxapiflat.GetNodeTaskStatus200ResponseData{}
+			responseData.SetStatus("stopped")
+			response.SetData(responseData)
+
+			return &response, nil
+		}
+
 		fmt.Fprintf(os.Stderr, "Error when calling `NodesApi.GetNodeTaskStatus``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}

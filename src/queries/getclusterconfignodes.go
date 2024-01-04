@@ -37,7 +37,7 @@ func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Conte
 		return nil
 	}
 	//resources := clusterResourcesResponse.GetData()
-	restResponse, err := ConvertJsonHttpResponseToMap2(r)
+	restResponse, err := ConvertJsonHttpResponseBodyToMap(r)
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
 	//json := configmap.DataToJSON(restResponse)
 	//fmt.Fprintf(os.Stdout, "%s\n", json)

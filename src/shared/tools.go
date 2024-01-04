@@ -14,39 +14,6 @@ import (
 	"strings"
 )
 
-func GetClusterIndex(configData map[string]interface{}, name string) (int, error) {
-	clusters, err := configmap.GetInterfaceSliceValue(configData, "clusters")
-	if err != nil {
-		return -1, err
-	}
-
-	max := len(clusters)
-	if max == 0 {
-		return -1, errors.New("no clusers defined.")
-	}
-
-	number64, err := strconv.ParseInt(name, 10, 32)
-	if err == nil {
-		pos := int(number64)
-		if pos >= 0 && pos < max {
-			return pos, nil
-		} else {
-			return -1, errors.New("cluster index not found: " + strconv.Itoa(pos))
-		}
-	}
-
-	for i, cluster := range clusters {
-		clusterName, ok := cluster["name"]
-		// if cluster has no name
-		if !ok {
-			continue
-		}
-		if clusterName == name {
-			return i, nil
-		}
-	}
-	return -1, errors.New("cluster name not found: " + name)
-}
 func PickCluster(configData map[string]interface{}, name string) (map[string]interface{}, error) {
 
 	clusters, err := configmap.GetInterfaceSliceValue(configData, "clusters")
@@ -200,12 +167,9 @@ func JoinClusterAndSelector(pxCluster etc.PxCluster, selectors map[string]interf
 }
 func ExtractLatest(pxCluster etc.PxCluster, newStorageContent []map[string]interface{}) []map[string]interface{} {
 
-	nodeLength := len(pxCluster.Nodes)
-	nodeLookup := map[string]int{}
+	nodeLength := pxCluster.GetNodeCount()
 
-	for i, name := range pxCluster.Nodes {
-		nodeLookup[name] = i
-	}
+	nodeLookup := pxCluster.GetNodeLookup()
 
 	volidMap := map[string][]bool{}
 

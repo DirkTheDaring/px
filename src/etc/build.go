@@ -67,7 +67,7 @@ func ProcessCluster(pxClients []PxClient) PxCluster {
 	pxCluster.PxClientLookup = nodeIndexMap
 
 	sort.Strings(nodeList)
-	pxCluster.Nodes = nodeList
+	pxCluster.nodes = nodeList
 
 	vmidMachineMap, machines := buildMappingTableForMachines(pxClients)
 	pxCluster.uniqueMachines = vmidMachineMap

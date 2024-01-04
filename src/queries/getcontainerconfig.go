@@ -18,6 +18,6 @@ func JSONGetCTConfig(node string, vmid int64) (map[string]interface{}, error) {
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 		return nil, err
 	}
-	restResponse, _ := ConvertJsonHttpResponseToMap2(r)
+	restResponse, _ := ConvertJsonHttpResponseBodyToMap(r)
 	return restResponse, nil
 }

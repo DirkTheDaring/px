@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 	//"os"
 	"px/configmap"
 	"px/etc"
 )
 
-func ConvertJsonHttpResponseToMap2(r *http.Response) (map[string]interface{}, error) {
+func ConvertJsonHttpResponseBodyToMap(r *http.Response) (map[string]interface{}, error) {
 	if r == nil {
 		return nil, fmt.Errorf("response is nil")
 	}
@@ -28,7 +29,7 @@ func GetJsonStorageContent(pxClient etc.PxClient, node, storage string) (map[str
 		return nil, fmt.Errorf("error calling GetStorageContent: %v", err)
 	}
 
-	return ConvertJsonHttpResponseToMap2(r)
+	return ConvertJsonHttpResponseBodyToMap(r)
 }
 
 // We get back content list of a specific storage

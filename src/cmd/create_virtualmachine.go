@@ -128,8 +128,8 @@ func (o *CreateVirtualmachineOptions) Validate() error {
 		return errors.New("vmid not in range from " + strconv.Itoa(PROXMOX_MIN_VMID) + " to " + strconv.Itoa(PROXMOX_MAX_VMID))
 	}
 skip:
-	if !query.In(etc.GlobalPxCluster.Nodes, createVirtualmachineOptions.Node) {
-		return errors.New("node does not exist: " + createVirtualmachineOptions.Node + " Possible nodes: " + fmt.Sprintf("%v", etc.GlobalPxCluster.Nodes))
+	if !etc.GlobalPxCluster.HasNode(createVirtualmachineOptions.Node) {
+		return errors.New("node does not exist: " + createVirtualmachineOptions.Node + " Possible nodes: " + fmt.Sprintf("%v", etc.GlobalPxCluster.GetNodeNames()))
 	}
 
 	if createVirtualmachineOptions.Ip != "" {

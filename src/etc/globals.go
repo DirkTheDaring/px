@@ -31,7 +31,7 @@ type PxClient struct {
 type PxCluster struct {
 	PxClients      []PxClient
 	PxClientLookup map[string]int
-	Nodes          []string
+	nodes          []string
 	uniqueMachines map[string]map[string]interface{}
 	machines       []map[string]interface{}
 }
@@ -44,7 +44,7 @@ var GlobalConfigData map[string]interface{}
 // --------------------------------------------------------------
 
 func (p *PxCluster) GetMachines() []map[string]interface{} {
-	return GlobalPxCluster.machines
+	return p.machines
 }
 
 func (pxCluster PxCluster) Exists(node string, vmid int64) bool {
@@ -175,9 +175,9 @@ func (pxCluster PxCluster) GetStorageContent() []map[string]interface{} {
 		// Global * or "" are handle differently
 		if node == "*" || node == "" {
 			if _type == "nfs" {
-				nodeList = []string{pxCluster.Nodes[0]}
+				nodeList = []string{pxCluster.nodes[0]}
 			} else {
-				nodeList = pxCluster.Nodes
+				nodeList = pxCluster.nodes
 			}
 		} else {
 			nodeList = []string{node}
@@ -224,8 +224,8 @@ func (pxCluster PxCluster) GetStorageNames() []string {
 	return storageNames
 }
 func (pxCluster PxCluster) GetStorageNamesOnNode(node string) []string {
-	if !query.In(pxCluster.Nodes, node) {
-		fmt.Fprintf(os.Stderr, "GetStorageNameOnNode(): node not found: %s (%v)\n", node, pxCluster.Nodes)
+	if !query.In(pxCluster.nodes, node) {
+		fmt.Fprintf(os.Stderr, "GetStorageNameOnNode(): node not found: %s (%v)\n", node, pxCluster.nodes)
 		return []string{}
 	}
 	pxClient := pxCluster.GetPxClient(node)
@@ -233,8 +233,8 @@ func (pxCluster PxCluster) GetStorageNamesOnNode(node string) []string {
 }
 func (pxCluster PxCluster) GetAliasOnNode(node string) map[string]string {
 
-	if !query.In(pxCluster.Nodes, node) {
-		fmt.Fprintf(os.Stderr, "GetStorageNameOnNode(): node not found: %s (%v)\n", node, pxCluster.Nodes)
+	if !query.In(pxCluster.nodes, node) {
+		fmt.Fprintf(os.Stderr, "GetStorageNameOnNode(): node not found: %s (%v)\n", node, pxCluster.nodes)
 		return map[string]string{}
 	}
 	pxClient := pxCluster.GetPxClient(node)
@@ -254,10 +254,28 @@ func (pxCluster PxCluster) GetAliasOnNode(node string) map[string]string {
 	return map[string]string{}
 }
 
+func (pxCluster PxCluster) GetNodeNames() []string {
+	return pxCluster.nodes
+}
+
 func (pxCluster PxCluster) HasNode(node string) bool {
 	//fmt.Fprintf(os.Stderr, "HasNode() %v %v\n", node, pxCluster.Nodes)
-	return query.In(pxCluster.Nodes, node)
+	return query.In(pxCluster.nodes, node)
 }
+
+func (pxCluster PxCluster) GetNodeCount() int {
+	return len(pxCluster.nodes)
+}
+
+func (pxCluster PxCluster) GetNodeLookup() map[string]int {
+	nodeLookup := map[string]int{}
+	for i, name := range pxCluster.nodes {
+		nodeLookup[name] = i
+	}
+	return nodeLookup
+}
+
+//------------------------------------------------------------------------------
 
 func (pxClient PxClient) GetStorage(types []string) []map[string]interface{} {
 	list := []map[string]interface{}{}

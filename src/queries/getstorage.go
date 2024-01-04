@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"px/configmap"
+	"px/etc"
 
 	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
@@ -90,7 +92,7 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[str
 		return nil
 	}
 	//resources := clusterResourcesResponse.GetData()
-	restResponse, _ := ConvertJsonHttpResponseToMap2(r)
+	restResponse, _ := ConvertJsonHttpResponseBodyToMap(r)
 	//fmt.Fprintf(os.Stderr, "resp: %v %v\n", len(resources), restResponse["data"])
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", r)
@@ -99,4 +101,18 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[str
 	//fmt.Fprintf(os.Stdout, "%s\n", json)
 
 	return restResponse
+}
+func AssignStorage(pxClients []etc.PxClient) []etc.PxClient {
+	list := []etc.PxClient{}
+	for _, pxClient := range pxClients {
+		storageResponse := GetStorage(pxClient.ApiClient, pxClient.Context)
+		if storageResponse == nil {
+			continue
+		}
+		storageSlice, _ := configmap.GetInterfaceSliceValue(storageResponse, "data")
+		pxClient.Storage = storageSlice
+		//fmt.Fprintf(os.Stderr, "%v\n", pxClient.Storage)
+		list = append(list, pxClient)
+	}
+	return list
 }
