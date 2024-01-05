@@ -34,9 +34,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("--- Pre run for create virtualmachine")
-		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.PxClients)
+		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		//shared.GlobalPxCluster = shared.ProcessCluster(pxClients)
-		etc.GlobalPxCluster.PxClients = pxClients
+		etc.GlobalPxCluster.SetPxClients(pxClients)
 		//fmt.Println("--- Pre run end")
 
 	},

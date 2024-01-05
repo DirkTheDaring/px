@@ -186,7 +186,7 @@ func GetIgnitionArgs(cluster map[string]interface{}, node string, ignitionName s
 		return "", errors.New(fmt.Sprintf("storage for ignition does not exist: %s\n", storage))
 	}
 
-	pxClient := etc.GlobalPxCluster.GetPxClient(node)
+	pxClient, _ := etc.GlobalPxCluster.GetPxClient(node)
 	storageEntry := pxClient.GetStorageByName(storage)
 	if storageEntry == nil {
 		return "", errors.New(fmt.Sprintf("storage for ignition not found: %s\n", storage))

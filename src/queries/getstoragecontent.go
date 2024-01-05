@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
 	//"os"
 	"px/configmap"
 	"px/etc"
@@ -59,41 +58,52 @@ func GetStorageContentAll(pxClients []etc.PxClient) ([]etc.PxClient, error) {
 	var updatedClients []etc.PxClient
 
 	for _, pxClient := range pxClients {
-		storageContent := make(map[string]interface{})
-
-		for _, node := range pxClient.Nodes {
-			nodeStorageLookup := make(map[string]interface{})
-
-			for _, item := range pxClient.Storage {
-				storageType, ok := item["type"].(string)
-				if !ok || !(storageType == "dir" || storageType == "nfs") {
-					continue
-				}
-
-				storage, ok := item["storage"].(string)
-				if !ok {
-					return nil, fmt.Errorf("invalid storage type")
-				}
-
-				result, err := GetJsonStorageContent(pxClient, node, storage)
-				if err != nil {
-					return nil, err
-				}
-
-				data, err := configmap.GetInterfaceSliceValue(result, "data")
-				if err != nil {
-					return nil, err
-				}
-
-				nodeStorageLookup[storage] = data
-			}
-
-			storageContent[node] = nodeStorageLookup
-		}
+		storageContent, _ := GetClusterStorageContent(pxClient)
 
 		pxClient.StorageContent = storageContent
 		updatedClients = append(updatedClients, pxClient)
 	}
 
 	return updatedClients, nil
+}
+func GetClusterStorageContent(pxClient etc.PxClient) (map[string]interface{}, error) {
+
+	storageContent := make(map[string]interface{})
+
+	for _, node := range pxClient.Nodes {
+		nodeStorageLookup, _ := GetNodeStorageContent(node, pxClient.Storage, pxClient)
+		storageContent[node] = nodeStorageLookup
+	}
+
+	return storageContent, nil
+}
+func GetNodeStorageContent(node string, pxClientStorage []map[string]interface{}, pxClient etc.PxClient) (map[string]interface{}, error) {
+
+	nodeStorageLookup := make(map[string]interface{})
+
+	for _, item := range pxClientStorage {
+		storageType, ok := item["type"].(string)
+		if !ok || !(storageType == "dir" || storageType == "nfs") {
+			continue
+		}
+
+		storage, ok := item["storage"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid storage type")
+		}
+
+		result, err := GetJsonStorageContent(pxClient, node, storage)
+		if err != nil {
+			return nil, err
+		}
+
+		data, err := configmap.GetInterfaceSliceValue(result, "data")
+		if err != nil {
+			return nil, err
+		}
+
+		nodeStorageLookup[storage] = data
+	}
+
+	return nodeStorageLookup, nil
 }

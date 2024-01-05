@@ -1,17 +1,17 @@
 package shared
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
-	"github.com/DirkTheDaring/px-api-client-go"
-	"github.com/DirkTheDaring/px-api-client-internal-go"
-	"errors"
-	"net/url"
-	"encoding/json"
 
+	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
+	pxapiobject "github.com/DirkTheDaring/px-api-client-internal-go"
 )
 
 func PtrToString(val reflect.Value, boolValues []string) (string, bool) {
@@ -45,156 +45,157 @@ func PtrToString(val reflect.Value, boolValues []string) (string, bool) {
 		value := strconv.FormatInt(int_value, 10)
 		return value, true
 	} else {
-		fmt.Fprintf(os.Stderr, "PtrToString() unknown kind: s\n", kind)
+		fmt.Fprintf(os.Stderr, "PtrToString() unknown kind: %v\n", kind)
 	}
 	return value, false
 }
 
-
 // getJSONTag extracts the JSON tag name from the struct field.
 func getJSONTag(fieldType reflect.StructField) string {
-    tagParts := strings.Split(fieldType.Tag.Get("json"), ",")
-    return tagParts[0]
+	tagParts := strings.Split(fieldType.Tag.Get("json"), ",")
+	return tagParts[0]
 }
 
 // isSupportedKind checks if the field kind is supported for flattening.
 func isSupportedKind(kind reflect.Kind) bool {
-    return kind == reflect.Ptr || kind == reflect.String || kind == reflect.Bool
+	return kind == reflect.Ptr || kind == reflect.String || kind == reflect.Bool
 }
 
 // formatField returns the string representation of the field.
 func formatField(field reflect.Value, tagName string) (string, error) {
-    switch field.Kind() {
-    case reflect.Ptr:
-        if value, ok := PtrToString(field, nil); ok {
-            return tagName + "=" + value, nil
-        }
-    case reflect.String:
-        return tagName + "=" + field.String(),  nil
-    case reflect.Bool:
-        if field.Bool() {
-            return tagName + "=1", nil
-        }
-        return tagName + "=0", nil
-    }
-    msg := fmt.Sprintf("Wrong kind: %+v\n", field.Kind())
-    myError := errors.New(msg)
-    return "", myError
+	switch field.Kind() {
+	case reflect.Ptr:
+		if value, ok := PtrToString(field, nil); ok {
+			return tagName + "=" + value, nil
+		}
+	case reflect.String:
+		return tagName + "=" + field.String(), nil
+	case reflect.Bool:
+		if field.Bool() {
+			return tagName + "=1", nil
+		}
+		return tagName + "=0", nil
+	}
+	msg := fmt.Sprintf("Wrong kind: %+v\n", field.Kind())
+	myError := errors.New(msg)
+	return "", myError
 }
 
 // flatten converts a struct to a string representation, concatenating json tag names and values.
 func flatten(v reflect.Value) string {
-    var result strings.Builder
-    for i := 0; i < v.NumField(); i++ {
-        field := v.Field(i)
-        jsonTag := getJSONTag(v.Type().Field(i))
+	var result strings.Builder
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		jsonTag := getJSONTag(v.Type().Field(i))
 
-        if jsonTag == "" || !isSupportedKind(field.Kind()) {
-            continue
-        }
+		if jsonTag == "" || !isSupportedKind(field.Kind()) {
+			continue
+		}
 
-	str, err := formatField(field, jsonTag)
-	if err != nil {
-		continue
+		str, err := formatField(field, jsonTag)
+		if err != nil {
+			continue
+		}
+		if result.Len() > 0 {
+			result.WriteString(",")
+		}
+		result.WriteString(str)
 	}
-	if result.Len() > 0 {
-		result.WriteString(",")
-        }
-        result.WriteString(str)
-    }
 
-    str := result.String()
+	str := result.String()
 
-    return str
+	return str
 }
 
 // copyGeneral copies fields from src to dst, handling different field types.
 func copyGeneral(dst, src interface{}) {
 
-    srcVal := reflect.ValueOf(src).Elem()
-    dstVal := reflect.ValueOf(dst).Elem()
+	srcVal := reflect.ValueOf(src).Elem()
+	dstVal := reflect.ValueOf(dst).Elem()
 
-    for i := 0; i < srcVal.NumField(); i++ {
-        srcField, dstField := srcVal.Type().Field(i), dstVal.Type().Field(i)
-        if !fieldHasValue(reflect.ValueOf(src), srcField.Name) {
-            continue
-        }
-        copyField(reflect.ValueOf(src), reflect.ValueOf(dst), srcField, dstField)
+	for i := 0; i < srcVal.NumField(); i++ {
+		srcField, dstField := srcVal.Type().Field(i), dstVal.Type().Field(i)
+		if !fieldHasValue(reflect.ValueOf(src), srcField.Name) {
+			continue
+		}
+		copyField(reflect.ValueOf(src), reflect.ValueOf(dst), srcField, dstField)
 
-    }
+	}
 }
 
 // fieldHasValue checks if the field has a value set using the "Has" method.
 func fieldHasValue(obj reflect.Value, fieldName string) bool {
-    method := obj.MethodByName("Has" + fieldName)
-    if method.IsValid() {
-	    return method.Call(nil)[0].Bool()
-    }
-    return true
+	method := obj.MethodByName("Has" + fieldName)
+	if method.IsValid() {
+		return method.Call(nil)[0].Bool()
+	}
+	return true
 }
 
 // copyField copies a field from src to dst, considering type conversions.
 func copyField(src, dst reflect.Value, srcField, dstField reflect.StructField) {
-    result := src.MethodByName("Get" + srcField.Name).Call(nil)
-    if srcField.Type == dstField.Type {
-        dst.MethodByName("Set" + srcField.Name).Call(result)
-    } else {
-        val,err := handleTypeConversion(result[0])
-	if err != nil {
-		return
-	}
-	dst.MethodByName("Set" + srcField.Name).Call([]reflect.Value{reflect.ValueOf(val)})
+	result := src.MethodByName("Get" + srcField.Name).Call(nil)
+	if srcField.Type == dstField.Type {
+		dst.MethodByName("Set" + srcField.Name).Call(result)
+	} else {
+		val, err := handleTypeConversion(result[0])
+		if err != nil {
+			return
+		}
+		dst.MethodByName("Set" + srcField.Name).Call([]reflect.Value{reflect.ValueOf(val)})
 
-    }
+	}
 }
 
 // handleTypeConversion handles type conversion for field values.
 func handleTypeConversion(value reflect.Value) (interface{}, error) {
-    switch value.Kind() {
-    case reflect.Bool:
-        if value.Bool() {
-            return int32(1),nil
-        }
-        return int32(0),nil
-    case reflect.Int64, reflect.Int32:
-	// FIXME not sure if this right
-	var val int64 = value.Int()
-	return  []reflect.Value{reflect.ValueOf(val)},nil
-    case reflect.Struct:
-	    return flatten(value),nil
-    default:
-        return nil, fmt.Errorf("unsupported kind: %s", value.Kind()) 
-    }
-}
-
-func dumpDest(dst any) {
-	dstVal := reflect.ValueOf(dst).Elem()
-	for i := 0; i < dstVal.NumField(); i++ {
-		dstField := dstVal.Type().Field(i)
-		if !fieldHasValue(reflect.ValueOf(dst), dstField.Name) {
-			continue
+	switch value.Kind() {
+	case reflect.Bool:
+		if value.Bool() {
+			return int32(1), nil
 		}
-		result := reflect.ValueOf(dst).MethodByName("Get" + dstField.Name).Call(nil)
-
-		name := strings.ToLower(dstField.Name)
-
-		switch result[0].Kind() {
-		case reflect.String:
-			fmt.Fprintf(os.Stderr, "%s: %s\n", name, result[0])
-		case reflect.Int64, reflect.Int32:
-			fmt.Fprintf(os.Stderr, "%s: %v\n", name, result[0])
-		default:
-			fmt.Fprintf(os.Stderr, "%s: %v (default)\n", name, result[0])
-		}
+		return int32(0), nil
+	case reflect.Int64, reflect.Int32:
+		// FIXME not sure if this right
+		var val int64 = value.Int()
+		return []reflect.Value{reflect.ValueOf(val)}, nil
+	case reflect.Struct:
+		return flatten(value), nil
+	default:
+		return nil, fmt.Errorf("unsupported kind: %s", value.Kind())
 	}
 }
+
+/*
+	func dumpDest(dst any) {
+		dstVal := reflect.ValueOf(dst).Elem()
+		for i := 0; i < dstVal.NumField(); i++ {
+			dstField := dstVal.Type().Field(i)
+			if !fieldHasValue(reflect.ValueOf(dst), dstField.Name) {
+				continue
+			}
+			result := reflect.ValueOf(dst).MethodByName("Get" + dstField.Name).Call(nil)
+
+			name := strings.ToLower(dstField.Name)
+
+			switch result[0].Kind() {
+			case reflect.String:
+				fmt.Fprintf(os.Stderr, "%s: %s\n", name, result[0])
+			case reflect.Int64, reflect.Int32:
+				fmt.Fprintf(os.Stderr, "%s: %v\n", name, result[0])
+			default:
+				fmt.Fprintf(os.Stderr, "%s: %v (default)\n", name, result[0])
+			}
+		}
+	}
+*/
 func containsString(slice []string, str string) bool {
-    for _, item := range slice {
-        if item == str {
-            return true
-        }
-    }
-    return false
+	for _, item := range slice {
+		if item == str {
+			return true
+		}
+	}
+	return false
 }
 
 // Absolute QUIRK to satisfy proxmox API
@@ -217,7 +218,7 @@ func postProcessFieldsForEscaping(dst any, slice []string) {
 			continue
 		}
 		name := strings.ToLower(dstField.Name)
-		if !containsString(slice, name)  {
+		if !containsString(slice, name) {
 			continue
 		}
 		result := reflect.ValueOf(dst).MethodByName("Get" + dstField.Name).Call(nil)
@@ -255,4 +256,3 @@ func CopyUpdateContainerConfigSyncRequest(dst *pxapiflat.UpdateContainerConfigSy
 	jsonData, _ := json.Marshal(dst)
 	fmt.Println(string(jsonData))
 }
-

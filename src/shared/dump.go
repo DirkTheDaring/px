@@ -13,18 +13,19 @@ func DumpSystem(configData map[string]interface{}) {
 	fmt.Fprintf(os.Stdout, "%s\n", json)
 }
 
-func DumpNodes(configData map[string]interface{}) {
+func DumpNodes() {
 	fmt.Println("dump nodes called")
-
-	for key, value := range etc.GlobalPxCluster.PxClientLookup {
+	result := etc.GlobalPxCluster.GetPxClientLookup()
+	for key, value := range result {
 		fmt.Fprintf(os.Stderr, "%v %v\n", key, value)
 	}
 	os.Exit(0)
 }
+
 func DumpAny(data any) {
 	json, err := json.Marshal(data)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "<NIL>\n", json)
+		fmt.Fprintf(os.Stderr, "<NIL>\n")
 		return
 	}
 	fmt.Fprintf(os.Stderr, "%v\n", json)

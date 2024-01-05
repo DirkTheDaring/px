@@ -61,10 +61,10 @@ func buildMappingTableForMachines(pxClients []PxClient) (map[string]map[string]i
 }
 
 func ProcessCluster(pxClients []PxClient) PxCluster {
-	pxCluster := PxCluster{PxClients: pxClients}
+	pxCluster := PxCluster{pxClients: pxClients}
 
 	nodeIndexMap, nodeList := buildMappingTable(pxClients)
-	pxCluster.PxClientLookup = nodeIndexMap
+	pxCluster.pxClientLookup = nodeIndexMap
 
 	sort.Strings(nodeList)
 	pxCluster.nodes = nodeList

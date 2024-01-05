@@ -23,7 +23,10 @@ func InitConfig() {
 
 	clusterNodes, _ := configmap.GetInterfaceSliceValue(cluster, "nodes")
 	var timeout time.Duration = time.Millisecond * time.Duration(configmap.GetIntWithDefault(cluster, "timeout", 500))
-	pxClients := authentication.LoginClusterNodes(clusterNodes, timeout)
+
+	var pm authentication.PasswordManager = authentication.NewSimplePasswordManager(clusterNodes)
+
+	pxClients := authentication.LoginClusterNodes(clusterNodes, pm.GetCredentials, timeout)
 
 	pxClients = queries.AddClusterResources(pxClients)
 

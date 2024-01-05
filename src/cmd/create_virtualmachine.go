@@ -67,9 +67,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("--- Pre run for create virtualmachine")
-		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.PxClients)
+		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		//shared.GlobalPxCluster = shared.ProcessCluster(pxClients)
-		etc.GlobalPxCluster.PxClients = pxClients
+		etc.GlobalPxCluster.SetPxClients(pxClients)
 		//fmt.Println("--- Pre run end")
 
 	},
@@ -531,11 +531,15 @@ func updateCT(machine map[string]interface{}, node string, vmid int, newConfig m
 // FIXME it should be unique over the vmid, which is not deteactable
 // if you just look into the hashmap which is node/vmid nowadays
 func generateClusterId(node string) (int64, error) {
-	if len(etc.GlobalPxCluster.PxClients) <= 1 {
+	/*
+		if len(etc.GlobalPxCluster.PxClients) <= 1 {
+			return api.GetClusterNextId(node)
+		}
+	*/
+	if !etc.GlobalPxCluster.IsVirtualCluster() {
 		return api.GetClusterNextId(node)
 	}
-
-	pxClient := etc.GlobalPxCluster.GetPxClient(node)
+	pxClient, _ := etc.GlobalPxCluster.GetPxClient(node)
 	formula := 8*100000 + pxClient.OrigIndex*1000
 
 	for offset := 0; offset < 1000; offset++ {
@@ -852,6 +856,7 @@ func (o *CreateVirtualmachineOptions) Run() error {
 		proxmox.DumpJson(result)
 		fmt.Fprintf(os.Stderr, "---\n")
 	}
-	vars := etc.GlobalPxCluster.GetPxClient(createVirtualmachineOptions.Node).Vars
+	result2, _ := etc.GlobalPxCluster.GetPxClient(createVirtualmachineOptions.Node)
+	vars := result2.Vars
 	return CreateVM(result, vars, createVirtualmachineOptions.Dump, createVirtualmachineOptions.Node, createVirtualmachineOptions.Cattle, createVirtualmachineOptions.DryRun, createVirtualmachineOptions.Update)
 }

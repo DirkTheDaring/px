@@ -57,7 +57,6 @@ func DoStep(match string) {
 
 	// Handle match as it is special
 	machines = shared.SelectMachines(machines, match)
-
 	//filteredMachines := shared.FilterStringColumns(machines, []string{"name", "status"}, []string{match, "running"})
 	filteredMachines := shared.FilterStringColumns(machines, []string{"status"}, []string{"running"})
 	for _, filteredMachine := range filteredMachines {

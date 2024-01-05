@@ -62,6 +62,7 @@ func (o *FlashOptions) Validate() error {
 func (o *FlashOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
 	//ProcessFiles(flashOptions.File, "flash")
+	// FIXME options are not used!!!
 	documents.ProcessFiles("flash", ProcessSection, flashOptions.File)
 
 	return nil

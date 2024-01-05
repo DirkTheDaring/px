@@ -23,7 +23,7 @@ func PickCluster(configData map[string]interface{}, name string) (map[string]int
 
 	max := len(clusters)
 	if max == 0 {
-		return nil, errors.New("no clusters defined.")
+		return nil, fmt.Errorf("no clusters defined")
 	}
 
 	number64, err := strconv.ParseInt(name, 10, 32)
@@ -86,7 +86,7 @@ func StringSortMachines(machines []map[string]interface{}, fieldNames []string, 
 			}
 		*/
 
-		if ascending[k] == true {
+		if ascending[k] {
 			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %T\n", machines[i][fieldNames[k]])
 			a := newMachines[i][fieldNames[k]].(string)
 			//fmt.Fprintf(os.Stderr, "StringSortMachines() k: %T\n", machines[j][fieldNames[k]])
@@ -337,14 +337,14 @@ func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, 
 
 	machineNameStr, ok := configmap.GetString(machine, attribute)
 	if !ok {
-		return 0, errors.New(fmt.Sprintf("GetVmidByAttribute(): attribute not found: ", attribute))
+		return 0, fmt.Errorf("GetVmidByAttribute(): attribute not found: %v", attribute)
 	}
 	//fmt.Fprintf(os.Stderr, "STEP 2\n")
 	machines := GetMachinesByName(machineNameStr)
 	//fmt.Fprintf(os.Stderr, "STEP 3\n")
 	if len(machines) > 1 {
 		//fmt.Fprintf(os.Stderr, "machineName is not unique: %s\n", machineNameStr)
-		return 0, errors.New(fmt.Sprintf("machineName is not unique: %s", machineNameStr))
+		return 0, fmt.Errorf("machineName is not unique: %s", machineNameStr)
 		//fmt.Fprintf(os.Stderr, "machineName is not unique: %s\n", machineNameStr)
 	}
 	//fmt.Fprintf(os.Stderr, "STEP 4\n")

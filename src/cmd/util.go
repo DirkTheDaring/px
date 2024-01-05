@@ -537,7 +537,7 @@ func DoCreate(kind string, spec map[string]interface{}, node string, metadata ma
 		return
 	}
 
-	pxClient := etc.GlobalPxCluster.GetPxClient(node)
+	pxClient, _ := etc.GlobalPxCluster.GetPxClient(node)
 	itemVars := configmap.GetMapEntryWithDefault(metadata, "vars", map[string]interface{}{})
 	vars := configmap.MergeMapRecursive(pxClient.Vars, itemVars)
 

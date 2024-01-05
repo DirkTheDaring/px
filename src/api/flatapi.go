@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"px/etc"
@@ -16,16 +15,13 @@ func GetPxClient(node string) (etc.PxClient, *pxapiflat.APIClient, context.Conte
 
 	var apiClient *pxapiflat.APIClient
 	var context context.Context
-	//index, ok := nodeMap[node]
 
-	index, ok := etc.GlobalPxCluster.PxClientLookup[node]
+	pxClient, err := etc.GlobalPxCluster.GetPxClient(node)
 
-	if !ok {
-		return pxClient, nil, context, errors.New("node not found: " + node)
+	if err != nil {
+		return pxClient, nil, context, err
 	}
 
-	//pxClient = pxclients[index]
-	pxClient = etc.GlobalPxCluster.PxClients[index]
 	apiClient = pxClient.ApiClient
 	context = pxClient.Context
 	return pxClient, apiClient, context, nil
