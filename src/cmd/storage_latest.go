@@ -29,11 +29,14 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("storage latest called")
 
-		cluster, _ := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+		//cluster, _ := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+		clusterDatabase, _ := etc.GlobalPxCluster.PickCluster(ClusterName)
+		cluster := clusterDatabase.GetCluster()
+
 		selectors, _ := configmap.GetMapEntry(cluster, "selectors")
 
-		newStorageContent := shared.JoinClusterAndSelector(etc.GlobalPxCluster, selectors)
-		newStorageContent = shared.ExtractLatest(etc.GlobalPxCluster, newStorageContent)
+		newStorageContent := shared.JoinClusterAndSelector(*etc.GlobalPxCluster, selectors)
+		newStorageContent = shared.ExtractLatest(*etc.GlobalPxCluster, newStorageContent)
 		headers := []string{"label", "volid", "node"}
 		shared.RenderOnConsoleNew(newStorageContent, headers, nil)
 	},

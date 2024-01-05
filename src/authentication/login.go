@@ -50,7 +50,7 @@ func createHTTPClient(insecureSkipVerify, disableCompression bool, proxyURL stri
 }
 
 // LoginNode authenticates with the specified node using provided credentials and returns API client and tokens.
-func LoginNode(url string, username string, getCredentials GetCredentialsCallback, insecureSkipVerify bool, timeout time.Duration) (*pxapiflat.APIClient, string, string, error) {
+func LoginNode(url string, domain string, username string, getCredentials GetCredentialsCallback, insecureSkipVerify bool, timeout time.Duration) (*pxapiflat.APIClient, string, string, error) {
 	// Set up the HTTP client with specific configurations.
 	disableCompression := true
 	proxyURL := "" // Set your proxy URL here if needed
@@ -70,7 +70,7 @@ func LoginNode(url string, username string, getCredentials GetCredentialsCallbac
 	defer cancel()
 
 	// Execute the login request.
-	password, err := getCredentials(url, "", username)
+	password, err := getCredentials(url, domain, username)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get credentials for %s at url %s", username, url)
 	}
@@ -123,9 +123,11 @@ func LoginClusterNodes(nodes []map[string]interface{}, getCredentials GetCredent
 
 		url, _ := configmap.GetString(node, "url")
 		username, _ := configmap.GetString(node, "username")
+		domain, _ := configmap.GetString(node, "domain")
+
 		insecureskipverify := configmap.GetBoolWithDefault(node, "insecureskipverify", false)
 
-		apiClient, ticket, csrfpreventiontoken, err := LoginNode(url, username, getCredentials, insecureskipverify, timeout)
+		apiClient, ticket, csrfpreventiontoken, err := LoginNode(url, domain, username, getCredentials, insecureskipverify, timeout)
 		if err != nil {
 			// FIXME should depend on policy if we stay silent here
 			fmt.Fprintf(os.Stderr, "%v\n", err)

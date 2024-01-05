@@ -4,7 +4,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"px/api"
@@ -42,10 +41,10 @@ to quickly create a Cobra application.`,
 
 func (o *SnapshotCreateOptions) Validate(args []string) error {
 	if o.Node != "" && !etc.GlobalPxCluster.HasNode(o.Node) {
-		return errors.New(fmt.Sprintf("node does not exist: %v\n", o.Node))
+		return fmt.Errorf("node does not exist: %v", o.Node)
 	}
 	if o.Vmid != 0 && !InProxmoxVmidRange(o.Vmid) {
-		return errors.New(fmt.Sprintf("vmid not in range: %v\n", o.Vmid))
+		return fmt.Errorf("vmid not in range: %v", o.Vmid)
 	}
 	/* FIXME now in the context of node/vmid
 	if o.Vmid != 0 && etc.GlobalPxCluster.UniqueMachines[o.Vmid] == nil {
@@ -53,10 +52,10 @@ func (o *SnapshotCreateOptions) Validate(args []string) error {
 	}
 	*/
 	if len(args) == 0 {
-		return errors.New(fmt.Sprintf("please specifiy snapshot name\n"))
+		return fmt.Errorf("please specifiy snapshot name")
 	}
 	if len(args[0]) < 2 {
-		return errors.New(fmt.Sprintf("snapshotname must at least have 2 characters\n"))
+		return fmt.Errorf("snapshotname must at least have 2 characters")
 	}
 	return nil
 }

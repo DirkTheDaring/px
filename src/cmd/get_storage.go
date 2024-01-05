@@ -1,10 +1,10 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"px/etc"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -23,7 +23,7 @@ This application is a tool to generate the needed files
 to quickly get a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("getStorage called")
-		shared.StorageList()
+		shared.StorageList(etc.GlobalPxCluster)
 	},
 }
 

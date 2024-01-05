@@ -155,18 +155,22 @@ skip:
 			return errors.New("name is not compliant with RFC1123: " + createVirtualmachineOptions.Name)
 		}
 	}
-	// Fixme check if cattle name exists
+	/*
+		// FIXME check if cattle name exists
 
-	if createVirtualmachineOptions.Ignition {
-		// Fixme check if target ignition exists
-	}
-
+		if createVirtualmachineOptions.Ignition {
+			// FIXME check if target ignition exists
+		}
+	*/
 	//fmt.Fprintf(os.Stderr, "CreateVirtualmachineOptions Validate o: %v\n", o)
 	return nil
 }
 func CreatePxObjectCreateContainerRequest(config map[string]interface{}) (pxapiobject.CreateContainerRequest, error) {
 	createContainerRequest := pxapiobject.CreateContainerRequest{}
 	txt, err := json.Marshal(config)
+	if err != nil {
+		return createContainerRequest, err
+	}
 	if createVirtualmachineOptions.Dump {
 		fmt.Fprintf(os.Stderr, "%v\n", string(txt))
 	}
@@ -180,6 +184,9 @@ func CreatePxObjectCreateContainerRequest(config map[string]interface{}) (pxapio
 func CreatePxObjectCreateVMRequest(config map[string]interface{}) (pxapiobject.CreateVMRequest, error) {
 	createVMRequest := pxapiobject.CreateVMRequest{}
 	txt, err := json.Marshal(config)
+	if err != nil {
+		return createVMRequest, err
+	}
 	if createVirtualmachineOptions.Dump {
 		fmt.Fprintf(os.Stderr, "%v\n", string(txt))
 	}
@@ -194,6 +201,9 @@ func CreatePxFlatCreateContainerRequest(ct pxapiobject.CreateContainerRequest) (
 	shared.CopyContainer(&createContainerRequest, &ct)
 
 	txt, err := json.Marshal(createContainerRequest)
+	if err != nil {
+		return createContainerRequest, err
+	}
 	if createVirtualmachineOptions.Dump {
 		fmt.Fprintf(os.Stderr, "%v\n", string(txt))
 	}
@@ -211,6 +221,9 @@ func CreatePxFlatCreateVMRequest(vm pxapiobject.CreateVMRequest) (pxapiflat.Crea
 	//fmt.Fprintf(os.Stderr, "CreatePxFlatCreateVMRequest: %v\n", createVMRequest)
 
 	txt, err := json.Marshal(createVMRequest)
+	if err != nil {
+		return createVMRequest, err
+	}
 	if createVirtualmachineOptions.Dump {
 		fmt.Fprintf(os.Stderr, "%v\n", string(txt))
 	}
@@ -279,8 +292,8 @@ func SetImportFrom(cluster, machine map[string]interface{}) {
 		return
 	}
 
-	newStorageContent := shared.JoinClusterAndSelector(etc.GlobalPxCluster, selectors)
-	latestContent := shared.ExtractLatest(etc.GlobalPxCluster, newStorageContent)
+	newStorageContent := shared.JoinClusterAndSelector(*etc.GlobalPxCluster, selectors)
+	latestContent := shared.ExtractLatest(*etc.GlobalPxCluster, newStorageContent)
 
 	updateStorageDrives(machine, latestContent)
 }
@@ -318,8 +331,8 @@ func updateImportFrom(storageData map[string]interface{}, latestContent []map[st
 func SetOSTemplate(cluster map[string]interface{}, machine map[string]interface{}) {
 
 	selectors, _ := configmap.GetMapEntry(cluster, "selectors")
-	newStorageContent := shared.JoinClusterAndSelector(etc.GlobalPxCluster, selectors)
-	latestContent := shared.ExtractLatest(etc.GlobalPxCluster, newStorageContent)
+	newStorageContent := shared.JoinClusterAndSelector(*etc.GlobalPxCluster, selectors)
+	latestContent := shared.ExtractLatest(*etc.GlobalPxCluster, newStorageContent)
 	ostemplate, ok := configmap.GetString(machine, "ostemplate")
 	if !ok {
 		return
@@ -342,6 +355,8 @@ func SetOSTemplate(cluster map[string]interface{}, machine map[string]interface{
 func BuildMacAddressEntries(result map[string]interface{}, vmConfigData map[string]interface{}) map[string]interface{} {
 	networkAdapters := configmap.SelectKeys("^(net)[0-9]+$", result)
 	regex := "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
+	regexCompiled, _ := regexp.Compile(regex)
+
 	netVars := map[string]interface{}{}
 	for _, networkAdapter := range networkAdapters {
 		net := vmConfigData[networkAdapter].(string)
@@ -352,7 +367,7 @@ func BuildMacAddressEntries(result map[string]interface{}, vmConfigData map[stri
 			if len(array) != 2 {
 				continue
 			}
-			matched, _ := regexp.MatchString(regex, array2[1])
+			matched := regexCompiled.MatchString(array2[1])
 			if !matched {
 				continue
 			}
@@ -443,10 +458,11 @@ func actionLabel(createCT bool) string {
 }
 
 func handleCTCreation(machine, vars map[string]interface{}, node string, vmid int, createCT, dryRun bool) error {
-	cluster, err := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+	clusterDatabase, err := etc.GlobalPxCluster.PickCluster(ClusterName)
 	if err != nil {
 		return fmt.Errorf("error picking cluster: %w", err)
 	}
+	cluster := clusterDatabase.GetCluster()
 
 	prepareMachineForCreation(machine, cluster, node, vmid)
 
@@ -581,7 +597,7 @@ func createVMID(_type string, spec map[string]interface{}, node string) (int, bo
 
 	fmt.Fprintf(os.Stderr, "STAGE 3: node=%v vmid=%v create=%v\n", node, vmid, createVM)
 	if vmid == 0 {
-		err := errors.New("Could not create vmid.")
+		err := fmt.Errorf("could not create vmid")
 		return 0, false, err
 	}
 
@@ -639,10 +655,12 @@ func logCreationOrUpdate(createVM bool, vmid int, node string) {
 func prepareVMForCreationOrUpdate(spec map[string]interface{}, node string) (map[string]interface{}, error) {
 	aliases := etc.GlobalPxCluster.GetAliasOnNode(node)
 	storageNames := etc.GlobalPxCluster.GetStorageNamesOnNode(node)
-	cluster, err := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+	//cluster, err := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+	clusterDatabase, err := etc.GlobalPxCluster.PickCluster(ClusterName)
 	if err != nil {
 		return nil, fmt.Errorf("error picking cluster: %w", err)
 	}
+	cluster := clusterDatabase.GetCluster()
 
 	SetImportFrom(cluster, spec)
 	cattles.ProcessStorage(spec, aliases, storageNames)
@@ -719,7 +737,7 @@ func calculateNewDriveSizeIncrease(spec map[string]interface{}, vmConfigData map
 
 	desiredSizeInBytes, ok := shared.CalculateSizeInBytes(size)
 	if !ok {
-		return 0, errors.New(fmt.Sprintf("invalid size format: %s\n", size))
+		return 0, fmt.Errorf("invalid size format: %s", size)
 	}
 
 	driveEntry, ok := configmap.GetString(vmConfigData, storageDrive)
@@ -733,7 +751,7 @@ func calculateNewDriveSizeIncrease(spec map[string]interface{}, vmConfigData map
 	}
 
 	if currentSizeInBytes > desiredSizeInBytes {
-		err := errors.New(fmt.Sprintf("Drive %s size configuration is smaller than current VM: %s < %s\n", storageDrive, shared.ToSizeString(desiredSizeInBytes), shared.ToSizeString(currentSizeInBytes)))
+		err := fmt.Errorf("drive %s size configuration is smaller than current VM: %s < %s", storageDrive, shared.ToSizeString(desiredSizeInBytes), shared.ToSizeString(currentSizeInBytes))
 		return 0, err
 	}
 	delta_size := desiredSizeInBytes - currentSizeInBytes

@@ -336,7 +336,7 @@ func getLatestAndGreatestImport(cluster, spec map[string]interface{}, storageDri
 		return "", fmt.Errorf("import-from not found")
 	}
 
-	newStorageContent := shared.ExtractLatest(etc.GlobalPxCluster, shared.JoinClusterAndSelector(etc.GlobalPxCluster, cluster["selectors"].(map[string]interface{})))
+	newStorageContent := shared.ExtractLatest(*etc.GlobalPxCluster, shared.JoinClusterAndSelector(*etc.GlobalPxCluster, cluster["selectors"].(map[string]interface{})))
 
 	for _, storageLatestItem := range newStorageContent {
 		if label, ok := storageLatestItem["label"].(string); ok && importFrom == label {
@@ -411,11 +411,14 @@ func DoFlash(kind string, spec map[string]interface{}, node string) {
 	diskValue := extractDiskValue(disk)
 	fmt.Fprintf(os.Stderr, "diskValue = %v\n", diskValue)
 
-	cluster, err := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+	//cluster, err := shared.PickCluster(etc.GlobalConfigData, ClusterName)
+	clusterDatabase, err := etc.GlobalPxCluster.PickCluster(ClusterName)
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error picking cluster: %v\n", err)
 		return
 	}
+	cluster := clusterDatabase.GetCluster()
 
 	prepareSpecForStorage(node, spec, storageDrive)
 

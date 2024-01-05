@@ -11,12 +11,16 @@ import (
 )
 
 func GetPxClient(node string) (etc.PxClient, *pxapiflat.APIClient, context.Context, error) {
+	return GetPxClient2(etc.GlobalPxCluster, node)
+}
+func GetPxClient2(pxCluster *etc.PxCluster, node string) (etc.PxClient, *pxapiflat.APIClient, context.Context, error) {
 	var pxClient etc.PxClient
 
 	var apiClient *pxapiflat.APIClient
 	var context context.Context
 
-	pxClient, err := etc.GlobalPxCluster.GetPxClient(node)
+	//pxClient, err := etc.GlobalPxCluster.GetPxClient(node)
+	pxClient, err := pxCluster.GetPxClient(node)
 
 	if err != nil {
 		return pxClient, nil, context, err

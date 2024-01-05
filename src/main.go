@@ -6,6 +6,7 @@ import (
 	"px/cmd"
 	"px/configmap"
 	"px/etc"
+	"px/proxmox/clusters"
 	"px/queries"
 	"px/shared"
 	"sort"
@@ -15,16 +16,30 @@ import (
 )
 
 func InitConfig() {
-	//fmt.Fprintf(os.Stderr, "initConfig() clustername: %v\n", cmd.ClusterName)
-	etc.InitGlobalConfigData()
-	cluster := etc.GetClusterByName(cmd.ClusterName)
+	etc.GlobalPxCluster = InitPxCluster()
+}
 
-	//fmt.Fprintf(os.Stderr, "initConfig() cluster: %v\n", cluster)
+func InitPxCluster() *etc.PxCluster {
 
-	clusterNodes, _ := configmap.GetInterfaceSliceValue(cluster, "nodes")
-	var timeout time.Duration = time.Millisecond * time.Duration(configmap.GetIntWithDefault(cluster, "timeout", 500))
+	clusterConfigData := clusters.GetSystemConfiguration()
+	clustersDatabase := etc.NewClustersDatabase(&clusterConfigData)
+	clusterDatabase, _ := clustersDatabase.GetClusterDatabaseByName(cmd.ClusterName)
+
+	pxClients := InitPxClients(clusterDatabase)
+
+	pxCluster := etc.PxCluster{}
+	pxCluster.SetGlobalConfigData(&clusterConfigData)
+	etc.InitCluster(&pxCluster, pxClients)
+
+	return &pxCluster
+}
+
+func InitPxClients(clusterDatabase *etc.ClusterDatabase) []etc.PxClient {
+
+	clusterNodes := clusterDatabase.GetNodes()
 
 	var pm authentication.PasswordManager = authentication.NewSimplePasswordManager(clusterNodes)
+	var timeout time.Duration = time.Millisecond * time.Duration(clusterDatabase.GetTimeout())
 
 	pxClients := authentication.LoginClusterNodes(clusterNodes, pm.GetCredentials, timeout)
 
@@ -32,9 +47,9 @@ func InitConfig() {
 
 	list := []etc.PxClient{}
 
-	clusterVars := configmap.GetMapEntryWithDefault(cluster, "vars", map[string]interface{}{})
-	clusterIgnition := configmap.GetMapEntryWithDefault(cluster, "ignition", map[string]interface{}{})
-	clusterAliases := configmap.GetMapEntryWithDefault(cluster, "aliases", map[string]interface{}{})
+	clusterVars := clusterDatabase.GetVars()
+	clusterIgnition := clusterDatabase.GetIgnition()
+	clusterAliases := clusterDatabase.GetAliases()
 
 	for _, pxClient := range pxClients {
 		nodeConfig := clusterNodes[pxClient.OrigIndex]
@@ -78,17 +93,17 @@ func InitConfig() {
 		}
 		//proxmox.DumpJson(storageAliases)
 		pxClient.StorageAliases = storageAliases
+		pxClient.Parent = clusterDatabase
 		list = append(list, pxClient)
 	}
 	pxClients = list
 
 	// Add Storage
 	pxClients = queries.AssignStorage(pxClients)
+	return pxClients
 
-	// All vmids are assigned (and duplicates excluded)
-	etc.GlobalPxCluster = etc.ProcessCluster(pxClients)
-	//fmt.Fprintf(os.Stderr, "******************** Init ended\n")
 }
+
 func main() {
 	cobra.OnInitialize(InitConfig)
 	cmd.Execute()

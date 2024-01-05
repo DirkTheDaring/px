@@ -1,10 +1,10 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"px/etc"
 	"px/shared"
 
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("status called")
 		//fmt.Fprintf(os.Stderr, "BUG?: >%v<\n", statusOptions.Match)
-		shared.Status(statusOptions.Match)
+		shared.Status(etc.GlobalPxCluster, statusOptions.Match)
 	},
 }
 

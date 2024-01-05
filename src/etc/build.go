@@ -60,20 +60,19 @@ func buildMappingTableForMachines(pxClients []PxClient) (map[string]map[string]i
 	return vmidMachineMap, machineList
 }
 
-func ProcessCluster(pxClients []PxClient) PxCluster {
-	pxCluster := PxCluster{pxClients: pxClients}
+func InitCluster(pxCluster *PxCluster, pxClients []PxClient) {
+	pxCluster.pxClients = pxClients
 
-	nodeIndexMap, nodeList := buildMappingTable(pxClients)
+	nodeIndexMap, nodeList := buildMappingTable(pxCluster.pxClients)
 	pxCluster.pxClientLookup = nodeIndexMap
 
 	sort.Strings(nodeList)
 	pxCluster.nodes = nodeList
 
-	vmidMachineMap, machines := buildMappingTableForMachines(pxClients)
+	vmidMachineMap, machines := buildMappingTableForMachines(pxCluster.pxClients)
 	pxCluster.uniqueMachines = vmidMachineMap
 
 	//StringSortMachines(machines, []string{"name"}, []bool{true})
 	pxCluster.machines = machines // not unique
 
-	return pxCluster
 }

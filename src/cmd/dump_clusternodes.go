@@ -6,7 +6,6 @@ package cmd
 import (
 	"px/etc"
 	"px/queries"
-	//		"px/shared"
 
 	"github.com/spf13/cobra"
 )

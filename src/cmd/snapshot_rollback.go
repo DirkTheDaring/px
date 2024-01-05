@@ -4,7 +4,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"px/api"
@@ -56,7 +55,7 @@ func init() {
 }
 func (o *SnapshotRollbackOptions) Validate(args []string) error {
 	if len(args) == 0 {
-		return errors.New(fmt.Sprintf("please specifiy snapshot name\n"))
+		return fmt.Errorf("please specifiy snapshot name")
 	}
 	return nil
 }

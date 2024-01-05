@@ -329,8 +329,9 @@ func StringFilter(mapList []map[string]interface{}, key string, value string) []
 	return list
 
 }
-func GetMachinesByName(name string) []map[string]interface{} {
-	return StringFilter(etc.GlobalPxCluster.GetMachines(), "name", name)
+func GetMachinesByName(pxCluster *etc.PxCluster, name string) []map[string]interface{} {
+	//return StringFilter(etc.GlobalPxCluster.GetMachines(), "name", name)
+	return StringFilter(pxCluster.GetMachines(), "name", name)
 }
 
 func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, error) {
@@ -340,7 +341,7 @@ func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, 
 		return 0, fmt.Errorf("GetVmidByAttribute(): attribute not found: %v", attribute)
 	}
 	//fmt.Fprintf(os.Stderr, "STEP 2\n")
-	machines := GetMachinesByName(machineNameStr)
+	machines := GetMachinesByName(etc.GlobalPxCluster, machineNameStr)
 	//fmt.Fprintf(os.Stderr, "STEP 3\n")
 	if len(machines) > 1 {
 		//fmt.Fprintf(os.Stderr, "machineName is not unique: %s\n", machineNameStr)

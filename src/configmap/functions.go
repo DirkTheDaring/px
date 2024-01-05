@@ -5,12 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 func DataToJSON(data map[string]interface{}) []byte {
 	json, err := json.Marshal(data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+	return json
+}
+func DataToJSONByPtr(data *map[string]interface{}) []byte {
+	if data == nil {
+		return []byte{}
+	}
+	json, err := json.Marshal(*data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
@@ -55,5 +66,33 @@ func GetInterfaceSliceValue(data map[string]interface{}, name string) ([]map[str
 		msg := fmt.Sprintf("could not cast: %T for %s\n", v, name)
 		err := errors.New(msg)
 		return nil, err
+	}
+}
+
+func GetInterfaceSliceValueByPtr(data *map[string]interface{}, name string) ([]map[string]interface{}, error) {
+	if data == nil {
+		return nil, errors.New("data map is nil")
+	}
+
+	clusters, ok := (*data)[name]
+	if !ok {
+		return nil, fmt.Errorf("could not find key: %s", name)
+	}
+
+	switch v := clusters.(type) {
+	case []interface{}:
+		result := make([]map[string]interface{}, 0, len(v))
+		for _, item := range v {
+			itemMap, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("item is not a map[string]interface{}: %T", item)
+			}
+			result = append(result, itemMap)
+		}
+		return result, nil
+	case []map[string]interface{}:
+		return v, nil
+	default:
+		return nil, fmt.Errorf("could not cast: %T for %s", v, name)
 	}
 }

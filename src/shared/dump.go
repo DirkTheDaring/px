@@ -4,18 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"px/configmap"
 	"px/etc"
 )
 
-func DumpSystem(configData map[string]interface{}) {
-	json := configmap.DataToJSON(configData)
-	fmt.Fprintf(os.Stdout, "%s\n", json)
-}
-
-func DumpNodes() {
+func DumpNodes(pxCluster *etc.PxCluster) {
 	fmt.Println("dump nodes called")
-	result := etc.GlobalPxCluster.GetPxClientLookup()
+	//result := etc.GlobalPxCluster.GetPxClientLookup()
+	result := pxCluster.GetPxClientLookup()
 	for key, value := range result {
 		fmt.Fprintf(os.Stderr, "%v %v\n", key, value)
 	}

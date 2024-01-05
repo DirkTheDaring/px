@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"px/api"
 	"px/configmap"
 	"px/etc"
@@ -55,10 +54,10 @@ func DoSnapshotList(match string) {
 	//fmt.Println("snapshot list called")
 
 	machines := etc.GlobalPxCluster.GetMachines()
-
-	snapshots := GetSnapshotsAll(machines)
 	// Handle match as it is special
 	machines = shared.SelectMachines(machines, match)
+
+	snapshots := GetSnapshotsAll(machines)
 
 	headers := []string{"snapshot", "type", "parent", "node", "vmid", "name", "snaptime"}
 	snapshots = shared.StringSortMachines(snapshots, []string{"snapshot", "node", "name"}, []bool{true, true, true})
@@ -70,8 +69,8 @@ func DoSnapshotList(match string) {
 func ConvertEpochToDateTime(epoch int64) string {
 	t := time.Unix(epoch, 0) // The second parameter is nanoseconds
 	humanReadable := t.Format("2006-01-02 15:04:05")
-	value := fmt.Sprintf("%s", humanReadable)
-	return value
+	return humanReadable
+
 }
 
 func GetSnapshotsAll(machines []map[string]interface{}) []map[string]interface{} {

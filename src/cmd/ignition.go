@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"px/api"
@@ -179,21 +178,21 @@ func GetIgnitionArgs(cluster map[string]interface{}, node string, ignitionName s
 	}
 	storage, ok := configmap.GetString(ignitionConfiguration, "storage")
 	if !ok {
-		return "", errors.New("the ignition section does not contain a storage entry.")
+		return "", fmt.Errorf("the ignition section does not contain a storage entry")
 	}
 	// Fixme you should also check if this storage can be used to upload iso files
 	if !query.In(etc.GlobalPxCluster.GetStorageNamesOnNode(node), storage) {
-		return "", errors.New(fmt.Sprintf("storage for ignition does not exist: %s\n", storage))
+		return "", fmt.Errorf(fmt.Sprintf("storage for ignition does not exist: %s", storage))
 	}
 
 	pxClient, _ := etc.GlobalPxCluster.GetPxClient(node)
 	storageEntry := pxClient.GetStorageByName(storage)
 	if storageEntry == nil {
-		return "", errors.New(fmt.Sprintf("storage for ignition not found: %s\n", storage))
+		return "", fmt.Errorf(fmt.Sprintf("storage for ignition not found: %s", storage))
 	}
 	contentArray := strings.Split(storageEntry["content"].(string), ",")
 	if !query.In(contentArray, "iso") {
-		return "", errors.New(fmt.Sprintf("storage does not accept iso content: %s\n", storage))
+		return "", fmt.Errorf(fmt.Sprintf("storage does not accept iso content: %s", storage))
 	}
 	path := storageEntry["path"].(string)
 	ignitionArgs := "-fw_cfg name=opt/com.coreos/config,file=" + path + "/template/iso/" + ignitionName + ".iso"

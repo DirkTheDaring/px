@@ -44,8 +44,9 @@ func SelectMachines(machines []map[string]interface{}, match string) []map[strin
 }
 
 // Status displays the status of machines filtered by the match criteria.
-func Status(match string) {
-	machines := etc.GlobalPxCluster.GetMachines()
+func Status(pxCluster *etc.PxCluster, match string) {
+	//machines := etc.GlobalPxCluster.GetMachines()
+	machines := pxCluster.GetMachines()
 	machines = SelectMachines(machines, match)
 	sortedMachines := StringSortMachines(machines, []string{"name"}, []bool{true})
 

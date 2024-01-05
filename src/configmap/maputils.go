@@ -106,6 +106,9 @@ func GetInt(data map[string]interface{}, name string) (int, bool) {
 	}
 
 	valueStr, ok := value.(string)
+	if !ok {
+		return 0, false
+	}
 	valueInt, err := strconv.Atoi(valueStr)
 	if err == nil {
 		return valueInt, true
@@ -113,7 +116,6 @@ func GetInt(data map[string]interface{}, name string) (int, bool) {
 
 	return 0, false
 }
-
 
 func GetInt64(data map[string]interface{}, name string) (int64, bool) {
 	value, ok := data[name]
@@ -140,6 +142,9 @@ func GetInt64(data map[string]interface{}, name string) (int64, bool) {
 	}
 
 	valueStr, ok := value.(string)
+	if !ok {
+		return 0, false
+	}
 	valueInt64, err := strconv.ParseInt(valueStr, 10, 64)
 	if err == nil {
 		return valueInt64, true
@@ -168,11 +173,10 @@ func GetBool(data map[string]interface{}, name string) (bool, bool) {
 	}
 	boolValue, ok := value.(bool)
 	if ok {
-		return boolValue,true
+		return boolValue, true
 	}
 	return false, false
 }
-
 
 func GetBoolWithDefault(data map[string]interface{}, name string, defaultValue bool) bool {
 	value, ok := data[name]
@@ -192,9 +196,14 @@ func GetIntWithDefault(data map[string]interface{}, name string, defaultValue in
 	}
 	return intValue
 }
+
 func GetStringSliceWithDefault(data map[string]interface{}, name string, defaultValue []string) []string {
 
 	value, ok := data[name]
+
+	if !ok {
+		return defaultValue
+	}
 	//fmt.Fprintf(os.Stderr, "GetStringSliceWithDefault() %v %T\n", ok, value)
 	valueSlice, ok := value.([]string)
 	if ok {
@@ -275,10 +284,11 @@ func GetMapEntry(data map[string]interface{}, name string) (map[string]interface
 	}
 	return myMap, true
 }
-func SelectKeys(match string, data map[string]interface{}) []string {
+
+func SelectKeys(match string, dataHash map[string]interface{}) []string {
 	regex, _ := regexp.Compile(match)
 	list := []string{}
-	for key, _ := range data {
+	for key := range dataHash {
 		if !regex.MatchString(key) {
 			continue
 		}
