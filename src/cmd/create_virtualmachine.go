@@ -66,6 +66,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
+
 		//fmt.Println("--- Pre run for create virtualmachine")
 		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		//shared.GlobalPxCluster = shared.ProcessCluster(pxClients)
@@ -811,7 +813,7 @@ func updateVMConfiguration(vmConfigData, spec map[string]interface{}, dryRun boo
 			return nil
 	*/
 
-	return queries.UpdateVMConfiguration(node, int64(vmid), newConfig, dryRun)
+	return shared.UpdateVMConfiguration(node, int64(vmid), newConfig, dryRun)
 }
 
 // createChanges generates a new configuration based on the differences

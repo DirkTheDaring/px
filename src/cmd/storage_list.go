@@ -4,7 +4,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"px/etc"
 	"px/shared"
 
@@ -21,9 +20,13 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
-		shared.StorageList(etc.GlobalPxCluster)
+
+		DoStorageList(ClusterName)
 	},
 }
 
@@ -39,4 +42,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// storageListCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func DoStorageList(clusterName string) {
+	shared.StorageList(etc.GlobalPxCluster)
 }

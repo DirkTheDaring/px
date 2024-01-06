@@ -23,6 +23,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
 		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		etc.GlobalPxCluster.SetPxClients(pxClients)
 	},
@@ -36,8 +37,14 @@ to quickly create a Cobra application.`,
 		selectors, _ := configmap.GetMapEntry(cluster, "selectors")
 
 		newStorageContent := shared.JoinClusterAndSelector(*etc.GlobalPxCluster, selectors)
+		//fmt.Fprintf(os.Stderr, "Storage latest called: %v\n", newStorageContent)
+		//jsonBinary, _ := json.Marshal(newStorageContent)
+		//fmt.Fprintf(os.Stdout, "%v\n", string(jsonBinary))
 		newStorageContent = shared.ExtractLatest(*etc.GlobalPxCluster, newStorageContent)
 		headers := []string{"label", "volid", "node"}
+
+		//fmt.Fprintf(os.Stderr, "Storage latest called: %v\n", newStorageContent)
+
 		shared.RenderOnConsoleNew(newStorageContent, headers, nil)
 	},
 }

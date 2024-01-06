@@ -26,6 +26,10 @@ var shutdownCmd = &cobra.Command{
 	Long: `The shutdown command is used to gracefully shut down a virtual machine (VM) or container (LXC)
 running on Proxmox Virtual Environment (PVE). This ensures that the VM is powered off safely,
 allowing for the proper termination of processes and file system operations.`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		DoShutdown(shutdownOptions.Match)
 

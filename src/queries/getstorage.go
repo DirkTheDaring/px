@@ -10,7 +10,7 @@ import (
 	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
 
-func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
+func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) (map[string]interface{}, error) {
 	//{
 	//  "data": [
 	//    {
@@ -89,7 +89,7 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[str
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `StorageApi.GetStorage``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-		return nil
+		return nil, err
 	}
 	//resources := clusterResourcesResponse.GetData()
 	restResponse, _ := ConvertJsonHttpResponseBodyToMap(r)
@@ -100,12 +100,12 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) map[str
 	//json := configmap.DataToJSON(restResponse)
 	//fmt.Fprintf(os.Stdout, "%s\n", json)
 
-	return restResponse
+	return restResponse, nil
 }
 func AssignStorage(pxClients []etc.PxClient) []etc.PxClient {
 	list := []etc.PxClient{}
 	for _, pxClient := range pxClients {
-		storageResponse := GetStorage(pxClient.ApiClient, pxClient.Context)
+		storageResponse, _ := GetStorage(pxClient.ApiClient, pxClient.Context)
 		if storageResponse == nil {
 			continue
 		}

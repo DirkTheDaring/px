@@ -30,8 +30,9 @@ func (pxClient *PxClient) GetStorage(types []string) []map[string]interface{} {
 		if !InOrSkipIfEmpty(types, _type) {
 			continue
 		}
-		// Side Effect! we change the map and add a value
-		value["node"] = pxClient.Nodes[0]
+		// Side Effect! we change the map and add a value YOU MUST NOT DO THIS!!!
+		// It currently screws up the latest algorithm
+		//value["node"] = pxClient.Nodes[0]
 
 		list = append(list, value)
 	}

@@ -16,6 +16,7 @@ type PxCluster struct {
 	uniqueMachines   map[string]map[string]interface{}
 	machines         []map[string]interface{}
 	globalConfigData *map[string]interface{}
+	//api              *SimpleAPI
 }
 
 func (pxCluster *PxCluster) GetMachines() []map[string]interface{} {
@@ -59,12 +60,12 @@ func (pxCluster *PxCluster) SetPxClients(pxClients []PxClient) {
 // SELECT * FROM result.GetStorage()
 
 func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} {
-	/*
-		if !pxCluster.IsVirtualCluster() {
-			fmt.Printf("GetStorage() not virtual\n")
-			return pxCluster.pxClients[0].GetStorage(types)
-		}
-	*/
+
+	if !pxCluster.IsVirtualCluster() {
+		fmt.Printf("GetStorage() not virtual\n")
+		return pxCluster.pxClients[0].GetStorage(types)
+	}
+
 	account := map[string]int{}
 	// Count storage (names) , used to determine, if a storage is on every Client
 	for _, pxClient := range pxCluster.pxClients {
@@ -99,7 +100,7 @@ func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} 
 		}
 	}
 
-	//fmt.Fprintf(os.Stderr, "commonStorage: %v\n", commonStorage)
+	//	fmt.Fprintf(os.Stderr, "commonStorage: %v\n", commonStorage)
 
 	list := []map[string]interface{}{}
 	pxClient := pxCluster.pxClients[0]
@@ -114,9 +115,17 @@ func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} 
 			list = append(list, item)
 		}
 	}
+
+	//	jsonBinary, _ := json.Marshal(list)
+	//	fmt.Fprintf(os.Stdout, "list: %v\n", string(jsonBinary))
+
 	// Now add the local
 	for _, pxClient := range pxCluster.pxClients {
 		storageList := pxClient.GetStorage(types)
+
+		//		jsonBinary, _ := json.Marshal(storageList)
+		//		fmt.Fprintf(os.Stdout, "storageList = %v\n", string(jsonBinary))
+
 		for _, node := range pxClient.Nodes {
 			for _, item := range storageList {
 				storage, _ := item["storage"].(string)
@@ -136,6 +145,9 @@ func (pxCluster *PxCluster) GetStorageContent() []map[string]interface{} {
 	types := []string{"dir", "nfs"}
 
 	storageList := pxCluster.GetStorage(types)
+
+	//jsonBinary, _ := json.Marshal(storageList)
+	//fmt.Fprintf(os.Stdout, "storageList = %v\n", string(jsonBinary))
 
 	list := []map[string]interface{}{}
 
@@ -262,4 +274,31 @@ func (pxCluster *PxCluster) PickCluster(name string) (*ClusterDatabase, error) {
 
 	return clustersDatabase.GetClusterDatabaseByName(name)
 
+}
+
+func (pxCluster *PxCluster) GetPxClientMap() map[string]*PxClient {
+	newMap := make(map[string]*PxClient)
+	for key, index := range pxCluster.pxClientLookup {
+		newMap[key] = &pxCluster.pxClients[index]
+	}
+	return newMap
+}
+
+// GetMachinesByKey filters a slice of maps within a PxCluster object,
+// returning only those that contain a specific key-value pair.
+func (pxCluster *PxCluster) GetMachinesByKey(key, value string) ([]map[string]interface{}, error) {
+	var list []map[string]interface{}
+
+	for _, mapItem := range pxCluster.machines {
+		val, ok := configmap.GetString(mapItem, key)
+		if !ok {
+			// Skip items that do not contain the key
+			continue
+		}
+		if val == value {
+			list = append(list, mapItem)
+		}
+	}
+
+	return list, nil
 }

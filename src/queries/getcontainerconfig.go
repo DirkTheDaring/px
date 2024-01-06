@@ -8,7 +8,7 @@ import (
 )
 
 func JSONGetCTConfig(node string, vmid int64) (map[string]interface{}, error) {
-	_, apiClient, context, err := api.GetPxClient(node)
+	apiClient, context, err := api.GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}

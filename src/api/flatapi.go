@@ -4,37 +4,26 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"px/etc"
 	"strconv"
 
 	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
 
-func GetPxClient(node string) (etc.PxClient, *pxapiflat.APIClient, context.Context, error) {
-	return GetPxClient2(etc.GlobalPxCluster, node)
-}
-func GetPxClient2(pxCluster *etc.PxCluster, node string) (etc.PxClient, *pxapiflat.APIClient, context.Context, error) {
-	var pxClient etc.PxClient
+var GlobalSimpleApi *SimpleAPI
 
-	var apiClient *pxapiflat.APIClient
-	var context context.Context
-
-	//pxClient, err := etc.GlobalPxCluster.GetPxClient(node)
-	pxClient, err := pxCluster.GetPxClient(node)
-
+func GetPxClient(node string) (*pxapiflat.APIClient, context.Context, error) {
+	apiClient, context, err := GlobalSimpleApi.GetPxClient(node)
 	if err != nil {
-		return pxClient, nil, context, err
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(1)
 	}
-
-	apiClient = pxClient.ApiClient
-	context = pxClient.Context
-	return pxClient, apiClient, context, nil
+	return apiClient, context, err
 }
 
 // This function really returns the same number on subsequenct call, if there
 // is no new virtual machine created
 func GetClusterNextId(node string) (int64, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return -1, err
 	}
@@ -53,7 +42,7 @@ func GetClusterNextId(node string) (int64, error) {
 }
 
 func GetStorageContent(node string, storage string) (*pxapiflat.GetStorageContent200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +58,7 @@ func GetStorageContent(node string, storage string) (*pxapiflat.GetStorageConten
 }
 
 func Upload(node string, storage string, content string, filename *os.File) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +80,7 @@ func Upload(node string, storage string, content string, filename *os.File) (*px
 }
 
 func GetStorages(node string) (*pxapiflat.GetStorages200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +99,7 @@ func GetStorages(node string) (*pxapiflat.GetStorages200Response, error) {
 
 func GetClusterResources(node string) (*pxapiflat.GetClusterResources200Response, error) {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +115,7 @@ func GetClusterResources(node string) (*pxapiflat.GetClusterResources200Response
 
 /*
 func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest pxapiflat.UpdateVMConfigRequest) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +136,7 @@ func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest pxapiflat.Upd
 
 // | **Post** /nodes/{node}/qemu | createVM
 func CreateVM(node string, flatmachine pxapiflat.CreateVMRequest) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +154,7 @@ func CreateVM(node string, flatmachine pxapiflat.CreateVMRequest) (*pxapiflat.Cr
 
 func CreateVMSnapshot(node string, vmid int64, snapshotName string) (*pxapiflat.TaskStartResponse, error) {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +172,7 @@ func CreateVMSnapshot(node string, vmid int64, snapshotName string) (*pxapiflat.
 
 // | **Delete** /nodes/{node}/qemu/{vmid} | deleteVM
 func DeleteVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +189,7 @@ func DeleteVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 
 // | **Delete** /nodes/{node}/qemu/{vmid}/snapshot/{snapname} | deleteVMSnapshot
 func DeleteVMSnapshot(node string, vmid int64, snapname string) (*pxapiflat.TaskStartResponse, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +207,7 @@ func DeleteVMSnapshot(node string, vmid int64, snapname string) (*pxapiflat.Task
 
 // | **Get** /nodes/{node}/qemu/{vmid}/status/current | getCurrentVMStatus
 func GetCurrentVMStatus(node string, vmid int64) (*pxapiflat.GetCurrentVMStatus200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +229,7 @@ func GetCurrentVMStatus(node string, vmid int64) (*pxapiflat.GetCurrentVMStatus2
 // | **Get** /nodes/{node}/qemu/{vmid} | getVM
 
 func GetVM(node string, vmid int64) (*pxapiflat.GetVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +246,7 @@ func GetVM(node string, vmid int64) (*pxapiflat.GetVM200Response, error) {
 // | **Get** /nodes/{node}/qemu/{vmid}/config | getVMConfig
 
 func GetVMConfig(node string, vmid int64) (*pxapiflat.GetVMConfig200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +263,7 @@ func GetVMConfig(node string, vmid int64) (*pxapiflat.GetVMConfig200Response, er
 // | **Get** /nodes/{node}/qemu/{vmid}/pending | getVMConfigPending
 
 func GetVMConfigPending(node string, vmid int64) (*pxapiflat.GetVMConfigPending200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +281,7 @@ func GetVMConfigPending(node string, vmid int64) (*pxapiflat.GetVMConfigPending2
 // | **Get** /nodes/{node}/qemu/{vmid}/snapshot/{snapname} | getVMSnapshot
 
 func GetVMSnapshot(node string, vmid int64) (*pxapiflat.GetVMSnapshots200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +298,7 @@ func GetVMSnapshot(node string, vmid int64) (*pxapiflat.GetVMSnapshots200Respons
 // | **Get** /nodes/{node}/qemu/{vmid}/snapshot/{snapname}/config | getVMSnapshotConfig
 
 func GetVMSnapshotConfig(node string, vmid int64, snapname string) (*pxapiflat.GetVMSnapshotConfig200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +315,7 @@ func GetVMSnapshotConfig(node string, vmid int64, snapname string) (*pxapiflat.G
 // | **Get** /nodes/{node}/qemu/{vmid}/snapshot | getVMSnapshots
 
 func GetVMSnapshots(node string, vmid int64) (*pxapiflat.GetVMSnapshots200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +332,7 @@ func GetVMSnapshots(node string, vmid int64) (*pxapiflat.GetVMSnapshots200Respon
 // | **Get** /nodes/{node}/qemu | getVMs
 
 func GetVMs(node string) (*pxapiflat.GetVMs200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +349,7 @@ func GetVMs(node string) (*pxapiflat.GetVMs200Response, error) {
 // | **Post** /nodes/{node}/qemu/{vmid}/status/reboot | rebootVM
 
 func RebootVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +368,7 @@ func RebootVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 // | **Put** /nodes/{node}/qemu/{vmid}/resize | resizeVMDisk
 
 func ResizeVMDisk(node string, vmid int64, disk string, size string) (*pxapiflat.TaskStartResponse, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +392,7 @@ func ResizeVMDisk(node string, vmid int64, disk string, size string) (*pxapiflat
 // | **Post** /nodes/{node}/qemu/{vmid}/status/resume | resumeVM
 
 func ResumeVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +411,7 @@ func ResumeVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 // | **Post** /nodes/{node}/qemu/{vmid}/snapshot/{snapname}/rollback | rollbackVMSnapshot
 
 func RollbackVMSnapshot(node string, vmid int64, snapname string) (*pxapiflat.TaskStartResponse, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -442,7 +431,7 @@ func RollbackVMSnapshot(node string, vmid int64, snapname string) (*pxapiflat.Ta
 // | **Post** /nodes/{node}/qemu/{vmid}/status/shutdown | shutdownVM
 
 func ShutdownVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +453,7 @@ func ShutdownVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error)
 // | **Post** /nodes/{node}/qemu/{vmid}/status/start | startVM
 
 func StartVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +473,7 @@ func StartVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 // | **Post** /nodes/{node}/qemu/{vmid}/status/stop | stopVM
 
 func StopVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +494,7 @@ func StopVM(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 // | **Post** /nodes/{node}/qemu/{vmid}/status/suspend | suspendVM
 
 func SuspendVM(node string, vmid int64, suspendVMRequest *pxapiflat.SuspendVMRequest) error {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return err
@@ -529,7 +518,7 @@ func SuspendVM(node string, vmid int64, suspendVMRequest *pxapiflat.SuspendVMReq
 // | **Post** /nodes/{node}/qemu/{vmid}/config | updateVMConfig
 
 func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest *pxapiflat.UpdateVMConfigRequest) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -552,7 +541,7 @@ func UpdateVMConfig(node string, vmid int64, updateVMConfigRequest *pxapiflat.Up
 // | **Put** /nodes/{node}/qemu/{vmid}/config | updateVMConfigSync
 
 func UpdateVMConfigSync(node string, vmid int64, updateVMConfigSyncRequest *pxapiflat.UpdateVMConfigSyncRequest) error {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return err
@@ -576,7 +565,7 @@ func UpdateVMConfigSync(node string, vmid int64, updateVMConfigSyncRequest *pxap
 
 func UpdateVMSnapshotConfig(node string, vmid int64, snapname string, updateVMSnapshotConfigRequest *pxapiflat.UpdateVMSnapshotConfigRequest) error {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return err
@@ -600,7 +589,7 @@ func UpdateVMSnapshotConfig(node string, vmid int64, snapname string, updateVMSn
 
 func CreateContainer(node string, createContainerRequest pxapiflat.CreateContainerRequest) (*pxapiflat.CreateVM200Response, error) {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -620,7 +609,7 @@ func CreateContainer(node string, createContainerRequest pxapiflat.CreateContain
 
 func CreateContainerSnapshot(node string, vmid int64, snapshotName string) (*pxapiflat.TaskStartResponse, error) {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -642,7 +631,7 @@ func CreateContainerSnapshot(node string, vmid int64, snapshotName string) (*pxa
 // | **Delete** /nodes/{node}/lxc/{vmid} | deleteContainer
 func DeleteContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -662,7 +651,7 @@ func DeleteContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, e
 // | **Delete** /nodes/{node}/lxc/{vmid}/snapshot/{snapname} | deleteContainerSnapshot
 
 func DeleteContainerSnapshot(node string, vmid int64, snapname string) (*pxapiflat.TaskStartResponse, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -681,7 +670,7 @@ func DeleteContainerSnapshot(node string, vmid int64, snapname string) (*pxapifl
 // | **Get** /nodes/{node}/lxc/{vmid} | getContainer
 
 func GetContainer(node string, vmid int64) (*pxapiflat.GetVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -700,7 +689,7 @@ func GetContainer(node string, vmid int64) (*pxapiflat.GetVM200Response, error) 
 // | **Get** /nodes/{node}/lxc/{vmid}/config | getContainerConfig
 
 func GetContainerConfig(node string, vmid int64) (*pxapiflat.GetContainerConfig200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -720,7 +709,7 @@ func GetContainerConfig(node string, vmid int64) (*pxapiflat.GetContainerConfig2
 // | **Get** /nodes/{node}/lxc/{vmid}/pending | getContainerConfigPending
 
 func GetContainerConfigPending(node string, vmid int64) (*pxapiflat.GetContainerConfigPending200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -740,7 +729,7 @@ func GetContainerConfigPending(node string, vmid int64) (*pxapiflat.GetContainer
 // | **Get** /nodes/{node}/lxc/{vmid}/snapshot/{snapname} | getContainerSnapshot
 
 func GetContainerSnapshot(node string, vmid int64, snapname string) (*pxapiflat.GetVMSnapshot200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -759,7 +748,7 @@ func GetContainerSnapshot(node string, vmid int64, snapname string) (*pxapiflat.
 // | **Get** /nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config | getContainerSnapshotConfig
 
 func GetContainerSnapshotConfig(node string, vmid int64, snapname string) (*pxapiflat.GetVMSnapshotConfig200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -778,7 +767,7 @@ func GetContainerSnapshotConfig(node string, vmid int64, snapname string) (*pxap
 // | **Get** /nodes/{node}/lxc/{vmid}/snapshot | getContainerSnapshots
 
 func GetContainerSnapshots(node string, vmid int64) (*pxapiflat.GetContainerSnapshots200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -798,7 +787,7 @@ func GetContainerSnapshots(node string, vmid int64) (*pxapiflat.GetContainerSnap
 // | **Get** /nodes/{node}/lxc/{vmid}/status | getContainerStatus
 
 func GetContainerStatus(node string, vmid int64) (*pxapiflat.GetVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -818,7 +807,7 @@ func GetContainerStatus(node string, vmid int64) (*pxapiflat.GetVM200Response, e
 // | **Get** /nodes/{node}/lxc | getContainers
 
 func GetContainers(node string) (*pxapiflat.GetContainers200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -838,7 +827,7 @@ func GetContainers(node string) (*pxapiflat.GetContainers200Response, error) {
 // | **Get** /nodes/{node}/lxc/{vmid}/status/current | getCurrentContainerStatus
 
 func GetCurrentContainerStatus(node string, vmid int64) (*pxapiflat.GetCurrentContainerStatus200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -862,7 +851,7 @@ func GetCurrentContainerStatus(node string, vmid int64) (*pxapiflat.GetCurrentCo
 
 // | **Post** /nodes/{node}/lxc/{vmid}/status/reboot | rebootContainer
 func RebootContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -882,7 +871,7 @@ func RebootContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, e
 // | **Put** /nodes/{node}/lxc/{vmid}/resize | resizeContainerDisk
 
 func ResizeContainerDisk(node string, vmid int64, resizeContainerDiskRequest pxapiflat.ResizeContainerDiskRequest) (*pxapiflat.TaskStartResponse, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -904,7 +893,7 @@ func ResizeContainerDisk(node string, vmid int64, resizeContainerDiskRequest pxa
 // | **Post** /nodes/{node}/lxc/{vmid}/status/resume | resumeContainer
 
 func ResumeContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -927,7 +916,7 @@ func ResumeContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, e
 // | **Post** /nodes/{node}/lxc/{vmid}/snapshot/{snapname}/rollback | rollbackContainerSnapshot
 
 func RollbackContainerSnapshot(node string, vmid int64, snapname string) (*pxapiflat.TaskStartResponse, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -950,7 +939,7 @@ func RollbackContainerSnapshot(node string, vmid int64, snapname string) (*pxapi
 // | **Post** /nodes/{node}/lxc/{vmid}/status/shutdown | shutdownContainer
 
 func ShutdownContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -972,7 +961,7 @@ func ShutdownContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response,
 // | **Post** /nodes/{node}/lxc/{vmid}/status/start | startContainer
 
 func StartContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -995,7 +984,7 @@ func StartContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, er
 // | **Post** /nodes/{node}/lxc/{vmid}/status/stop | stopContainer
 
 func StopContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -1018,7 +1007,7 @@ func StopContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, err
 // | **Post** /nodes/{node}/lxc/{vmid}/status/suspend | suspendContainer
 
 func SuspendContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -1040,7 +1029,7 @@ func SuspendContainer(node string, vmid int64) (*pxapiflat.CreateVM200Response, 
 //| **Put** /nodes/{node}/lxc/{vmid}/config | updateContainerConfigSync
 
 func UpdateContainerConfigSync(node string, vmid int64, updateContainerConfigSyncRequest pxapiflat.UpdateContainerConfigSyncRequest) (*pxapiflat.CreateVM200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -1061,7 +1050,7 @@ func UpdateContainerConfigSync(node string, vmid int64, updateContainerConfigSyn
 
 func UpdateContainerSnapshotConfig(node string, vmid int64, snapname string, updateContainerSnapshotConfigRequest pxapiflat.UpdateContainerSnapshotConfigRequest) (*pxapiflat.CreateVM200Response, error) {
 
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err
@@ -1083,7 +1072,7 @@ func UpdateContainerSnapshotConfig(node string, vmid int64, snapname string, upd
 }
 
 func GetNodeTaskStatus(node string, upid string) (*pxapiflat.GetNodeTaskStatus200Response, error) {
-	_, apiClient, context, err := GetPxClient(node)
+	apiClient, context, err := GetPxClient(node)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error : %v\n", err)
 		return nil, err

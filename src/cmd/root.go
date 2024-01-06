@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// / Global Vars
 var ClusterName string
 var ConfigFile string
 

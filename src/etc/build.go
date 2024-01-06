@@ -66,6 +66,12 @@ func InitCluster(pxCluster *PxCluster, pxClients []PxClient) {
 	nodeIndexMap, nodeList := buildMappingTable(pxCluster.pxClients)
 	pxCluster.pxClientLookup = nodeIndexMap
 
+	newMap := make(map[string]*PxClient)
+	for key, value := range nodeIndexMap {
+		newMap[key] = &pxClients[value]
+	}
+	//pxCluster.api = api.NewSSimpleAPI(newMap)
+
 	sort.Strings(nodeList)
 	pxCluster.nodes = nodeList
 

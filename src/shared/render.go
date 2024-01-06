@@ -120,8 +120,13 @@ func GenerateTableString(headers []string, outputs []map[string]interface{}, col
 	// Rows
 	for _, output := range outputs {
 		for i, header := range headers {
+			var value string
+			if output[header] == nil {
+				value = "~"
+			} else {
+				value = fmt.Sprintf("%v", output[header])
+			}
 
-			value := fmt.Sprintf("%v", output[header])
 			sb.WriteString(formatColumn(value, columnWidths[i], isRightAligned(header, rightAlignments)))
 		}
 		sb.WriteString(lineEnding)

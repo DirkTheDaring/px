@@ -6,7 +6,6 @@ import (
 	"os"
 	"px/configmap"
 	"px/etc"
-	"px/proxmox"
 	"px/proxmox/query"
 	"regexp"
 	"sort"
@@ -276,6 +275,9 @@ func ExtractLatest(pxCluster etc.PxCluster, newStorageContent []map[string]inter
 		prevLabel = label
 	}
 
+	//jsonBinary, _ := json.Marshal(newStorageContent2)
+	//fmt.Fprintf(os.Stdout, "%v\n", string(jsonBinary))
+
 	// Beauty: Remove duplicate labels, but only those which
 	// reference the same amount as len(pxCluster.Nodes), which should
 	// mean, that they are available on every node.
@@ -305,18 +307,13 @@ func ExtractLatest(pxCluster etc.PxCluster, newStorageContent []map[string]inter
 	return newStorageContent2
 
 }
+
+/*
 func StringFilter(mapList []map[string]interface{}, key string, value string) []map[string]interface{} {
 	//fmt.Fprintf(os.Stderr, "StringFilter %v\n", len(mapList))
 	list := []map[string]interface{}{}
 	for _, mapItem := range mapList {
-		/*
-			_, ok := mapItem["maxcpu"]
-			if ok {
-				//os.Exit(1)
-				fmt.Fprintf(os.Stderr, "--- ERROR ---\n")
-			}
-			*&
-		*/
+
 		tmp, ok := configmap.GetString(mapItem, key)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "StringFilter() key not found: %v\n", key)
@@ -333,15 +330,20 @@ func GetMachinesByName(pxCluster *etc.PxCluster, name string) []map[string]inter
 	//return StringFilter(etc.GlobalPxCluster.GetMachines(), "name", name)
 	return StringFilter(pxCluster.GetMachines(), "name", name)
 }
+*/
 
 func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, error) {
+	fmt.Fprintf(os.Stderr, "GetVmidByAttribute: attribute=%v\n", attribute)
 
 	machineNameStr, ok := configmap.GetString(machine, attribute)
 	if !ok {
 		return 0, fmt.Errorf("GetVmidByAttribute(): attribute not found: %v", attribute)
 	}
 	//fmt.Fprintf(os.Stderr, "STEP 2\n")
-	machines := GetMachinesByName(etc.GlobalPxCluster, machineNameStr)
+	machines, err := etc.GlobalPxCluster.GetMachinesByKey(attribute, machineNameStr)
+	if err != nil {
+		return 0, err
+	}
 	//fmt.Fprintf(os.Stderr, "STEP 3\n")
 	if len(machines) > 1 {
 		//fmt.Fprintf(os.Stderr, "machineName is not unique: %s\n", machineNameStr)

@@ -4,7 +4,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"px/etc"
 	"px/queries"
 	"px/shared"
@@ -23,11 +22,12 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
 		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		etc.GlobalPxCluster.SetPxClients(pxClients)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("storage content called")
+		//fmt.Println("storage content called")
 		storageContent := etc.GlobalPxCluster.GetStorageContent()
 		headers := []string{"storage", "node", "type", "content", "volid"}
 		shared.RenderOnConsoleNew(storageContent, headers, nil)

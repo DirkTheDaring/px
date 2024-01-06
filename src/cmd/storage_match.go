@@ -4,7 +4,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"px/configmap"
 	"px/etc"
 	"px/queries"
@@ -24,19 +23,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
 		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		etc.GlobalPxCluster.SetPxClients(pxClients)
 
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("storage match called")
-		//cluster, _ := shared.PickCluster(etc.GlobalConfigData, ClusterName)
-		clusterDatabase, _ := etc.GlobalPxCluster.PickCluster(ClusterName)
-		cluster := clusterDatabase.GetCluster()
-		selectors, _ := configmap.GetMapEntry(cluster, "selectors")
-		newStorageContent := shared.JoinClusterAndSelector(*etc.GlobalPxCluster, selectors)
-		headers := []string{"label", "volid", "node"}
-		shared.RenderOnConsoleNew(newStorageContent, headers, nil)
+		DoStorageMatch(ClusterName)
 	},
 }
 
@@ -52,4 +45,14 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// storageMatchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+func DoStorageMatch(clusterName string) {
+
+	clusterDatabase, _ := etc.GlobalPxCluster.PickCluster(clusterName)
+	cluster := clusterDatabase.GetCluster()
+	selectors, _ := configmap.GetMapEntry(cluster, "selectors")
+	newStorageContent := shared.JoinClusterAndSelector(*etc.GlobalPxCluster, selectors)
+	headers := []string{"label", "volid", "node"}
+	shared.RenderOnConsoleNew(newStorageContent, headers, nil)
+
 }

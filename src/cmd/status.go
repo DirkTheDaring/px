@@ -26,10 +26,12 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		//fmt.Println("status called")
-		//fmt.Fprintf(os.Stderr, "BUG?: >%v<\n", statusOptions.Match)
-		shared.Status(etc.GlobalPxCluster, statusOptions.Match)
+		DoStatus(ClusterName, statusOptions.Match)
 	},
 }
 
@@ -47,4 +49,10 @@ func init() {
 	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	statusCmd.Flags().StringVar(&statusOptions.Match, "match", "", "match")
 	//statusCmd.Flags().StringVar
+}
+
+func DoStatus(clusterName string, match string) {
+	//fmt.Println("status called")
+	//fmt.Fprintf(os.Stderr, "BUG?: >%v<\n", statusOptions.Match)
+	shared.Status(etc.GlobalPxCluster, match)
 }

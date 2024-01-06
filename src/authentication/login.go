@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"px/configmap"
-	"px/etc"
 	"time"
 
 	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
@@ -50,19 +48,19 @@ func createHTTPClient(insecureSkipVerify, disableCompression bool, proxyURL stri
 }
 
 // LoginNode authenticates with the specified node using provided credentials and returns API client and tokens.
-func LoginNode(url string, domain string, username string, getCredentials GetCredentialsCallback, insecureSkipVerify bool, timeout time.Duration) (*pxapiflat.APIClient, string, string, error) {
+func LoginNode(login *LoginConfig, passwordManager *PasswordManager, timeout time.Duration) error {
 	// Set up the HTTP client with specific configurations.
 	disableCompression := true
 	proxyURL := "" // Set your proxy URL here if needed
-	httpClient, err := createHTTPClient(insecureSkipVerify, disableCompression, proxyURL)
+	httpClient, err := createHTTPClient(login.insecureskipverify, disableCompression, proxyURL)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to create HTTP client: %w", err)
+		return fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
 	// Setting up API client configuration.
 	configuration := pxapiflat.NewConfiguration()
 	configuration.HTTPClient = &httpClient
-	configuration.Servers[0] = pxapiflat.ServerConfiguration{URL: url, Description: "local"}
+	configuration.Servers[0] = pxapiflat.ServerConfiguration{URL: login.url, Description: "local"}
 	apiClient := pxapiflat.NewAPIClient(configuration)
 
 	// Create a context with timeout for the login request.
@@ -70,23 +68,31 @@ func LoginNode(url string, domain string, username string, getCredentials GetCre
 	defer cancel()
 
 	// Execute the login request.
-	password, err := getCredentials(url, domain, username)
+
+	password, err := (*passwordManager).GetCredentials(login.url, login.domain, login.username)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to get credentials for %s at url %s", username, url)
+		return fmt.Errorf("failed to get credentials for %s in domain '%s' at url %s", login.username, login.domain, login.url)
 	}
 
-	createAccessTicketRequest := *pxapiflat.NewCreateAccessTicketRequest(password, username)
+	// FIXME here you forgot domain!!!
+	createAccessTicketRequest := *pxapiflat.NewCreateAccessTicketRequest(password, login.username)
 	resp, _, err := apiClient.AccessAPI.CreateAccessTicket(ctx).CreateAccessTicketRequest(createAccessTicketRequest).Execute()
 	if err != nil {
-		return nil, "", "", fmt.Errorf("login request failed: %w", err)
+		return fmt.Errorf("login request failed: %w", err)
 	}
 
 	// Extracting the data from the response.
 	data := resp.GetData()
-	ticket := data.GetTicket()
-	csrfPreventionToken := data.GetCSRFPreventionToken()
 
-	return apiClient, ticket, csrfPreventionToken, nil
+	login.ticket = data.GetTicket()
+	login.csrfPreventionToken = data.GetCSRFPreventionToken()
+	login.apiClient = apiClient
+	login.context = CreateContext(login.ticket, login.csrfPreventionToken)
+
+	login.success = true
+	login.error = nil
+
+	return nil
 }
 
 func CreateContext(ticket string, csrfpreventiontoken string) context.Context {
@@ -107,40 +113,14 @@ func CreateContext(ticket string, csrfpreventiontoken string) context.Context {
 	return newContext
 }
 
-func LoginClusterNodes(nodes []map[string]interface{}, getCredentials GetCredentialsCallback, timeout time.Duration) []etc.PxClient {
-	// Usually only one node per cluster is needed
-	// However especially in testlabs, the nodes might come and go and might
-	// not be even joined. We then handle this by joining the nodes, if there
-	// is no conflict of nodenames (which MUST BE UNIQUE) AND Vmids which
-	// MUST BE UNIQUE (same requirements as for a proxmox cluster which is joined)
-	pxClients := []etc.PxClient{}
-
-	for i, node := range nodes {
-		enabled := configmap.GetBoolWithDefault(node, "enabled", true)
-		if !enabled {
-			continue
-		}
-
-		url, _ := configmap.GetString(node, "url")
-		username, _ := configmap.GetString(node, "username")
-		domain, _ := configmap.GetString(node, "domain")
-
-		insecureskipverify := configmap.GetBoolWithDefault(node, "insecureskipverify", false)
-
-		apiClient, ticket, csrfpreventiontoken, err := LoginNode(url, domain, username, getCredentials, insecureskipverify, timeout)
+func AuthenticateClusterNodes(logins []*LoginConfig, passwordManager *PasswordManager, timeout time.Duration) error {
+	for _, login := range logins {
+		err := LoginNode(login, passwordManager, timeout)
 		if err != nil {
-			// FIXME should depend on policy if we stay silent here
+			login.success = false
+			login.error = err
 			fmt.Fprintf(os.Stderr, "%v\n", err)
-			continue
 		}
-		//fmt.Fprintf(os.Stderr, "%v %v\n", ticket, csrfpreventiontoken)
-		context := CreateContext(ticket, csrfpreventiontoken)
-
-		pxClient := etc.PxClient{}
-		pxClient.Context = context
-		pxClient.ApiClient = apiClient
-		pxClient.OrigIndex = i
-		pxClients = append(pxClients, pxClient)
 	}
-	return pxClients
+	return nil
 }

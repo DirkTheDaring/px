@@ -4,10 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	//	"fmt"
-	//	"os"
-
-	"px/queries"
+	"px/shared"
 
 	"github.com/spf13/cobra"
 )
@@ -27,6 +24,10 @@ var applyCmd = &cobra.Command{
 and usage of using your command. For example:
 
 px apply --set onboot=0 --match emea-prod`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		shared.InitConfig(ClusterName)
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("get called", args)
 		applyOptions.Run()
@@ -66,6 +67,6 @@ func (o *ApplyOptions) Validate() error {
 
 func (o *ApplyOptions) Run() error {
 	//fmt.Fprintf(os.Stderr, "o: %v\n", o)
-	queries.Apply(applyOptions.Match, applyOptions.Set)
+	shared.Apply(applyOptions.Match, applyOptions.Set)
 	return nil
 }
