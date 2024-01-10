@@ -125,7 +125,10 @@ func DoConfig(match string) {
 	headers := []string{"node", "vmid", "type", "name", "memory", "cores", "cpu"}
 	headers = append(headers, disk_headers...)
 
-	shared.RenderOnConsoleNew(lines, headers, []string{"memory", "virtio0", "virtio1", "cores"})
+	right_alignments := []string{"memory", "cores"}
+	right_alignments = append(right_alignments, disk_headers...)
+
+	shared.RenderOnConsoleNew(lines, headers, right_alignments)
 
 }
 func getMachineConfig(node string, vmid int64, machineType string) (map[string]interface{}, error) {

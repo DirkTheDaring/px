@@ -47,8 +47,8 @@ func CreateLoginConfigsFromNodes(clusterNodes []map[string]interface{}) ([]*auth
 }
 
 // GeneratePxClientSlice creates a slice of PxClient objects from login configurations.
-func GeneratePxClientSlice(loginConfigs []*authentication.LoginConfig) ([]etc.PxClient, error) {
-	var pxClients []etc.PxClient
+func GeneratePxClientSlice(loginConfigs []*authentication.LoginConfig) ([]*etc.PxClient, error) {
+	var pxClients []*etc.PxClient
 
 	for i, loginConfig := range loginConfigs {
 		if !loginConfig.GetSuccess() {
@@ -60,7 +60,7 @@ func GeneratePxClientSlice(loginConfigs []*authentication.LoginConfig) ([]etc.Px
 			ApiClient: loginConfig.GetApiClient(),
 			OrigIndex: i,
 		}
-		pxClients = append(pxClients, pxClient)
+		pxClients = append(pxClients, &pxClient)
 	}
 
 	return pxClients, nil
@@ -84,8 +84,31 @@ func AuthenticateClusterNodes(clusterDatabase *etc.ClusterDatabase, passwordMana
 }
 
 // InitializePxClientSettings configures PxClient objects with settings derived from a cluster database.
-func InitializePxClientSettings(clusterDB *etc.ClusterDatabase, pxClients []etc.PxClient) ([]etc.PxClient, error) {
-	var initializedClients []etc.PxClient
+func InitializePxClientSettings2(client *etc.PxClient, clusterVars map[string]interface{}, clusterIgnition map[string]interface{}, clusterAliases map[string]interface{}, clusterNodes []map[string]interface{}) error {
+
+	nodeConfig := clusterNodes[client.OrigIndex]
+
+	client.Vars = mergeConfigMaps(clusterVars, nodeConfig, "vars")
+	client.Ignition = mergeConfigMaps(clusterIgnition, nodeConfig, "ignition")
+	client.Aliases = mergeConfigMaps(clusterAliases, nodeConfig, "aliases")
+
+	storageResponse, err := queries.GetStorage(client.ApiClient, client.Context)
+	if err != nil {
+		return fmt.Errorf("failed to get storage: %v", err)
+	}
+	storageSlice, err := convertToStorageSlice(storageResponse)
+	if err != nil {
+		return err
+	}
+	client.Storage = storageSlice
+	client.StorageAliases = createStorageAliases(client, storageSlice)
+
+	return nil
+}
+
+// InitializePxClientSettings configures PxClient objects with settings derived from a cluster database.
+func InitializePxClientSettings(clusterDB *etc.ClusterDatabase, pxClients []*etc.PxClient) error {
+	//var initializedClients []etc.PxClient
 
 	clusterVars := clusterDB.GetVars()
 	clusterIgnition := clusterDB.GetIgnition()
@@ -93,32 +116,22 @@ func InitializePxClientSettings(clusterDB *etc.ClusterDatabase, pxClients []etc.
 	clusterNodes := clusterDB.GetNodes()
 
 	for _, client := range pxClients {
-		nodeConfig := clusterNodes[client.OrigIndex]
-
-		client.Vars = mergeConfigMaps(clusterVars, nodeConfig, "vars")
-		client.Ignition = mergeConfigMaps(clusterIgnition, nodeConfig, "ignition")
-		client.Aliases = mergeConfigMaps(clusterAliases, nodeConfig, "aliases")
-
-		storageResponse, err := queries.GetStorage(client.ApiClient, client.Context)
+		err := InitializePxClientSettings2(client, clusterVars, clusterIgnition, clusterAliases, clusterNodes)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get storage: %v", err)
+			// FIXME set that it did not work
+			continue
 		}
+		client.Parent = clusterDB
+		//initializedClients = append(initializedClients, client)
+		storageResponse, _ := queries.GetStorage(client.ApiClient, client.Context)
 		if storageResponse == nil {
 			continue
 		}
-
-		storageSlice, err := convertToStorageSlice(storageResponse)
-		if err != nil {
-			return nil, err
-		}
+		storageSlice, _ := configmap.GetInterfaceSliceValue(storageResponse, "data")
 		client.Storage = storageSlice
-		client.StorageAliases = createStorageAliases(client, storageSlice)
-		client.Parent = clusterDB
 
-		initializedClients = append(initializedClients, client)
 	}
-
-	return queries.AssignStorage(initializedClients), nil
+	return nil
 }
 
 // mergeConfigMaps combines specific configuration maps from the node and the cluster.
@@ -152,7 +165,7 @@ func convertToStorageSlice(storageResponse interface{}) ([]map[string]interface{
 }
 
 // createStorageAliases generates storage aliases for a PxClient based on its storage configuration.
-func createStorageAliases(client etc.PxClient, storageSlice []map[string]interface{}) map[string]interface{} {
+func createStorageAliases(client *etc.PxClient, storageSlice []map[string]interface{}) map[string]interface{} {
 	aliases := make(map[string]interface{})
 	for _, node := range client.Nodes {
 		localStorage := FilterStorageByNodeName(storageSlice, node)
@@ -164,18 +177,30 @@ func createStorageAliases(client etc.PxClient, storageSlice []map[string]interfa
 	return aliases
 }
 
+// ConvertInterfaceSliceToStringSlice takes a slice of interfaces and converts it to a slice of strings.
+// Non-string items are ignored.
+func ConvertInterfaceSliceToStringSlice(interfaceSlice []interface{}) []string {
+	stringSlice := make([]string, 0, len(interfaceSlice))
+	for _, v := range interfaceSlice {
+		if str, ok := v.(string); ok {
+			stringSlice = append(stringSlice, str)
+		}
+	}
+	return stringSlice
+}
+
 // buildNodeStorageAliases creates storage aliases for a specific node.
 func buildNodeStorageAliases(aliases map[string]interface{}, localStorage []string) map[string]string {
+	//fmt.Fprintf(os.Stderr, "buildNodeStorageAliases aliases=%v AND localStorage=%v\n", aliases, localStorage)
 	nodeAliases := make(map[string]string)
 	for key := range aliases {
-		aliasValues, ok := aliases[key].([]string)
-		if !ok {
-			continue
-		}
+		aliasValues := configmap.GetStringSliceWithDefault(aliases, key, []string{})
 		if result := GetPriorityMatch(aliasValues, localStorage); result != "" {
 			nodeAliases[key] = result
 		}
 	}
+	//fmt.Fprintf(os.Stderr, "buildNodeStorageAliases RESULT0020 nodeAliases=%+v\n", nodeAliases)
+
 	return nodeAliases
 }
 
@@ -213,13 +238,18 @@ func InitPxCluster(clusterName string) *etc.PxCluster {
 		os.Exit(1)
 
 	}
-	pxClients = queries.AddClusterResources(pxClients)
+	queries.AddClusterResources(pxClients)
 
-	pxClients, _ = InitializePxClientSettings(clusterDatabase, pxClients)
+	InitializePxClientSettings(clusterDatabase, pxClients)
 
 	pxCluster := etc.PxCluster{}
 	pxCluster.SetGlobalConfigData(&clusterConfigData)
-	etc.InitCluster(&pxCluster, pxClients)
+
+	var newPxClients []etc.PxClient
+	for _, client := range pxClients {
+		newPxClients = append(newPxClients, *client)
+	}
+	etc.InitCluster(&pxCluster, newPxClients)
 
 	return &pxCluster
 }

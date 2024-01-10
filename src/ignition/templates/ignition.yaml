@@ -105,6 +105,8 @@ storage:
         method=manual
         addresses={{ .self.ipconfig0.ip }}
 {{if .self.ipconfig0.gw }}        gateway={{ .self.ipconfig0.gw }}{{end}}
+{{if .self.ipconfig0.route1 }}        route1={{ .self.ipconfig0.route1 }}{{end}}
+{{if .self.ipconfig0.route2 }}        route2={{ .self.ipconfig0.route2 }}{{end}}
 {{if .self.nameserver }}        dns={{ .self.nameserver }}{{end}}
 {{end}}
 {{if .self.ip6config0 }}

@@ -224,8 +224,9 @@ func (pxCluster *PxCluster) GetAliasOnNode(node string) map[string]string {
 		return map[string]string{}
 	}
 	pxClient, _ := pxCluster.GetPxClient(node)
+
 	aliasesValue, ok := pxClient.StorageAliases[node]
-	//fmt.Fprintf(os.Stderr, "GetStorageNameOnNode(): alias not found: %T\n", aliasesValue)
+
 	if !ok {
 		fmt.Fprintf(os.Stderr, "GetStorageNameOnNode(): alias not found: %s (%v) (%v)\n", node, aliasesValue, pxClient.StorageAliases)
 		return map[string]string{}

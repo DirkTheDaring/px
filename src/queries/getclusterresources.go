@@ -132,14 +132,14 @@ func GetClusterResources(apiClient *pxapiflat.APIClient, context context.Context
 	return restResponse
 }
 
-func AddClusterResource(pxClient etc.PxClient) (etc.PxClient, error) {
+func AddClusterResource(pxClient *etc.PxClient) error {
 	// get the cluster resource and filter out only the qemu and lxc
 	// there is also a type=="storage" in the answer, but it doesn't
 	// contain sufficient information (path missing) for the storage
 	// therefore this is not evaluated
 	clusterResources := GetClusterResources(pxClient.ApiClient, pxClient.Context)
 	if clusterResources == nil {
-		return pxClient, errors.New("")
+		return errors.New("")
 	}
 	clusterResourcesSlice, _ := configmap.GetInterfaceSliceValue(clusterResources, "data")
 	machines := []map[string]interface{}{}
@@ -185,16 +185,28 @@ func AddClusterResource(pxClient etc.PxClient) (etc.PxClient, error) {
 	pxClient.Nodes = nodeList
 	pxClient.Machines = machines
 
-	return pxClient, nil
+	return nil
 }
 
-func AddClusterResources(pxClients []etc.PxClient) []etc.PxClient {
-	list := []etc.PxClient{}
+/*
+	func AddClusterResources(pxClients []etc.PxClient) []etc.PxClient {
+		list := []etc.PxClient{}
+		for _, pxClient := range pxClients {
+			pxClient, err := AddClusterResource(pxClient)
+			if err == nil {
+				list = append(list, pxClient)
+			}
+		}
+		return list
+	}
+*/
+func AddClusterResources(pxClients []*etc.PxClient) {
+
 	for _, pxClient := range pxClients {
-		pxClient, err := AddClusterResource(pxClient)
+		err := AddClusterResource(pxClient)
 		if err == nil {
-			list = append(list, pxClient)
+			// FIXME her wee need to give an error status
 		}
 	}
-	return list
+
 }

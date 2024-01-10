@@ -477,6 +477,7 @@ func handleCTCreation(machine, vars map[string]interface{}, node string, vmid in
 func prepareMachineForCreation(machine, cluster map[string]interface{}, node string, vmid int) {
 	SetOSTemplate(cluster, machine)
 	aliases := etc.GlobalPxCluster.GetAliasOnNode(node)
+
 	storageNames := etc.GlobalPxCluster.GetStorageNamesOnNode(node)
 	cattles.ProcessStorage(machine, aliases, storageNames)
 	machine = MapRootFs(machine, aliases, storageNames)
@@ -656,6 +657,7 @@ func logCreationOrUpdate(createVM bool, vmid int, node string) {
 
 func prepareVMForCreationOrUpdate(spec map[string]interface{}, node string) (map[string]interface{}, error) {
 	aliases := etc.GlobalPxCluster.GetAliasOnNode(node)
+
 	storageNames := etc.GlobalPxCluster.GetStorageNamesOnNode(node)
 	//cluster, err := shared.PickCluster(etc.GlobalConfigData, ClusterName)
 	clusterDatabase, err := etc.GlobalPxCluster.PickCluster(ClusterName)

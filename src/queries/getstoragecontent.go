@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 	//"os"
 	"px/configmap"
 	"px/etc"
@@ -45,6 +46,15 @@ func GetStorageContentAll(pxClients []etc.PxClient) ([]etc.PxClient, error) {
 	}
 
 	return updatedClients, nil
+}
+
+func GetStorageContentAll2(pxClients []*etc.PxClient) error {
+	for _, pxClient := range pxClients {
+		storageContent, _ := GetClusterStorageContent(*pxClient)
+		pxClient.StorageContent = storageContent
+	}
+	return nil
+
 }
 
 // The following function transforms this into a lookup table, with the machine name ("pve") at the root
