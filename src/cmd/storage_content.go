@@ -23,8 +23,8 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		shared.InitConfig(ClusterName)
-		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
-		etc.GlobalPxCluster.SetPxClients(pxClients)
+		queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
+		//etc.GlobalPxCluster.SetPxClients(pxClients)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		//fmt.Println("storage content called")

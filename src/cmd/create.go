@@ -36,9 +36,8 @@ to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		shared.InitConfig(ClusterName)
 		//fmt.Println("--- Pre run for create virtualmachine")
-		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
-		//shared.GlobalPxCluster = shared.ProcessCluster(pxClients)
-		etc.GlobalPxCluster.SetPxClients(pxClients)
+		pxClients := etc.GlobalPxCluster.GetPxClients()
+		queries.GetStorageContentAll(pxClients)
 
 		//fmt.Println("--- Pre run end")
 

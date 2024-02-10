@@ -107,7 +107,13 @@ storage:
 {{if .self.ipconfig0.gw }}        gateway={{ .self.ipconfig0.gw }}{{end}}
 {{if .self.ipconfig0.route1 }}        route1={{ .self.ipconfig0.route1 }}{{end}}
 {{if .self.ipconfig0.route2 }}        route2={{ .self.ipconfig0.route2 }}{{end}}
-{{if .self.nameserver }}        dns={{ .self.nameserver }}{{end}}
+{{if .self.nameserver }}
+        dns={{ .self.nameserver }}
+{{else}}
+{{if .dns }}
+        dns={{ .dns[0] }}
+{{end}}
+{{end}}
 {{end}}
 {{if .self.ip6config0 }}
 {{if .self.ip6config0.ip }}

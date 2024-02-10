@@ -22,10 +22,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		shared.InitConfig(ClusterName)
-
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		queries.DumpClusterNodes2(etc.GlobalPxCluster.GetPxClients())
+		queries.DumpClusterNodes(etc.GlobalPxCluster.GetPxClients())
 	},
 }
 

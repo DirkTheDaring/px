@@ -10,13 +10,12 @@ import (
 )
 
 type PxCluster struct {
-	pxClients        []PxClient
+	pxClients2       []*PxClient
 	pxClientLookup   map[string]int
 	nodes            []string
 	uniqueMachines   map[string]map[string]interface{}
 	machines         []map[string]interface{}
 	globalConfigData *map[string]interface{}
-	//api              *SimpleAPI
 }
 
 func (pxCluster *PxCluster) GetMachines() []map[string]interface{} {
@@ -37,7 +36,7 @@ func (pxCluster *PxCluster) Exists(node string, vmid int64) bool {
 func (pxCluster *PxCluster) IsVirtualCluster() bool {
 	// if we have more than one entry in pxClients, this is a virtual cluster, which
 	// has different Storage per pxClient and also non unique vmids
-	return len(pxCluster.pxClients) > 1
+	return len(pxCluster.pxClients2) > 1
 }
 func (pxCluster *PxCluster) GetPxClient(node string) (PxClient, error) {
 	pos, ok := pxCluster.pxClientLookup[node]
@@ -45,15 +44,11 @@ func (pxCluster *PxCluster) GetPxClient(node string) (PxClient, error) {
 		return PxClient{}, fmt.Errorf("node not found: %v", node)
 
 	}
-	return pxCluster.pxClients[pos], nil
+	return *pxCluster.pxClients2[pos], nil
 }
 
-func (pxCluster *PxCluster) GetPxClients() []PxClient {
-	return pxCluster.pxClients
-}
-
-func (pxCluster *PxCluster) SetPxClients(pxClients []PxClient) {
-	pxCluster.pxClients = pxClients
+func (pxCluster *PxCluster) GetPxClients() []*PxClient {
+	return pxCluster.pxClients2
 }
 
 // SELECT * FROM  pxCluster.PxClients as result
@@ -63,12 +58,13 @@ func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} 
 
 	if !pxCluster.IsVirtualCluster() {
 		fmt.Printf("GetStorage() not virtual\n")
-		return pxCluster.pxClients[0].GetStorage(types)
+		pxClient := pxCluster.pxClients2[0]
+		return pxClient.GetStorage(types)
 	}
 
 	account := map[string]int{}
 	// Count storage (names) , used to determine, if a storage is on every Client
-	for _, pxClient := range pxCluster.pxClients {
+	for _, pxClient := range pxCluster.pxClients2 {
 		storageList := pxClient.GetStorage(types)
 		var uniqueKey string
 		for _, item := range storageList {
@@ -91,7 +87,7 @@ func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} 
 			}
 		}
 	}
-	total := len(pxCluster.pxClients)
+	total := len(pxCluster.pxClients2)
 	commonStorage := []string{}
 	for key, value := range account {
 		if value == total {
@@ -103,7 +99,7 @@ func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} 
 	//	fmt.Fprintf(os.Stderr, "commonStorage: %v\n", commonStorage)
 
 	list := []map[string]interface{}{}
-	pxClient := pxCluster.pxClients[0]
+	pxClient := pxCluster.pxClients2[0]
 	storageList := pxClient.GetStorage(types)
 	for _, needle := range commonStorage {
 		for _, item := range storageList {
@@ -120,7 +116,7 @@ func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} 
 	//	fmt.Fprintf(os.Stdout, "list: %v\n", string(jsonBinary))
 
 	// Now add the local
-	for _, pxClient := range pxCluster.pxClients {
+	for _, pxClient := range pxCluster.pxClients2 {
 		storageList := pxClient.GetStorage(types)
 
 		//		jsonBinary, _ := json.Marshal(storageList)
@@ -280,7 +276,7 @@ func (pxCluster *PxCluster) PickCluster(name string) (*ClusterDatabase, error) {
 func (pxCluster *PxCluster) GetPxClientMap() map[string]*PxClient {
 	newMap := make(map[string]*PxClient)
 	for key, index := range pxCluster.pxClientLookup {
-		newMap[key] = &pxCluster.pxClients[index]
+		newMap[key] = pxCluster.pxClients2[index]
 	}
 	return newMap
 }

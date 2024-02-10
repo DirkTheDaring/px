@@ -4,58 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
 	//"os"
 	"px/configmap"
 	"px/etc"
 )
-
-func ConvertJsonHttpResponseBodyToMap(r *http.Response) (map[string]interface{}, error) {
-	if r == nil {
-		return nil, fmt.Errorf("response is nil")
-	}
-	defer r.Body.Close()
-
-	var restResponse map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&restResponse); err != nil {
-		return nil, err
-	}
-	return restResponse, nil
-}
-
-func GetJsonStorageContent(pxClient etc.PxClient, node, storage string) (map[string]interface{}, error) {
-	_, r, err := pxClient.ApiClient.NodesAPI.GetStorageContent(pxClient.Context, node, storage).Execute()
-	if err != nil {
-		return nil, fmt.Errorf("error calling GetStorageContent: %v", err)
-	}
-
-	return ConvertJsonHttpResponseBodyToMap(r)
-}
-
-func GetStorageContentAll(pxClients []etc.PxClient) ([]etc.PxClient, error) {
-	var updatedClients []etc.PxClient
-
-	for _, pxClient := range pxClients {
-		storageContent, _ := GetClusterStorageContent(pxClient)
-
-		//jsonBinary, _ := json.Marshal(storageContent)
-		//fmt.Fprintf(os.Stdout, "host %v = %v\n", pxClient.Nodes[0], string(jsonBinary))
-
-		pxClient.StorageContent = storageContent
-		updatedClients = append(updatedClients, pxClient)
-	}
-
-	return updatedClients, nil
-}
-
-func GetStorageContentAll2(pxClients []*etc.PxClient) error {
-	for _, pxClient := range pxClients {
-		storageContent, _ := GetClusterStorageContent(*pxClient)
-		pxClient.StorageContent = storageContent
-	}
-	return nil
-
-}
 
 // The following function transforms this into a lookup table, with the machine name ("pve") at the root
 // {
@@ -96,7 +48,7 @@ func GetStorageContentAll2(pxClients []*etc.PxClient) error {
 //   }
 // }}
 
-func GetClusterStorageContent(pxClient etc.PxClient) (map[string]interface{}, error) {
+func GetClusterStorageContent(pxClient *etc.PxClient) (map[string]interface{}, error) {
 
 	storageContent := make(map[string]interface{})
 
@@ -106,6 +58,39 @@ func GetClusterStorageContent(pxClient etc.PxClient) (map[string]interface{}, er
 	}
 
 	return storageContent, nil
+}
+
+func GetStorageContentAll(pxClients []*etc.PxClient) error {
+	for _, pxClient := range pxClients {
+		storageContent, _ := GetClusterStorageContent(pxClient)
+		//jsonBinary, _ := json.Marshal(storageContent)
+		//fmt.Fprintf(os.Stdout, "host %v = %v\n", pxClient.Nodes[0], string(jsonBinary))
+		pxClient.StorageContent = storageContent
+	}
+
+	return nil
+}
+
+func ConvertJsonHttpResponseBodyToMap(r *http.Response) (map[string]interface{}, error) {
+	if r == nil {
+		return nil, fmt.Errorf("response is nil")
+	}
+	defer r.Body.Close()
+
+	var restResponse map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&restResponse); err != nil {
+		return nil, err
+	}
+	return restResponse, nil
+}
+
+func GetJsonStorageContent(pxClient *etc.PxClient, node, storage string) (map[string]interface{}, error) {
+	_, r, err := pxClient.ApiClient.NodesAPI.GetStorageContent(pxClient.Context, node, storage).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("error calling GetStorageContent: %v", err)
+	}
+
+	return ConvertJsonHttpResponseBodyToMap(r)
 }
 
 // We get back content list of a specific storage
@@ -131,7 +116,7 @@ func GetClusterStorageContent(pxClient etc.PxClient) (map[string]interface{}, er
 //      "volid": "myshared:vztmpl/Fedora-Container-Base-36-20220719.0-sshd.x86_64.tar.xz"
 //    },
 
-func GetNodeStorageContent(node string, pxClientStorage []map[string]interface{}, pxClient etc.PxClient) (map[string]interface{}, error) {
+func GetNodeStorageContent(node string, pxClientStorage []map[string]interface{}, pxClient *etc.PxClient) (map[string]interface{}, error) {
 
 	nodeStorageLookup := make(map[string]interface{})
 

@@ -69,9 +69,9 @@ to quickly create a Cobra application.`,
 		shared.InitConfig(ClusterName)
 
 		//fmt.Println("--- Pre run for create virtualmachine")
-		pxClients, _ := queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
+		queries.GetStorageContentAll(etc.GlobalPxCluster.GetPxClients())
 		//shared.GlobalPxCluster = shared.ProcessCluster(pxClients)
-		etc.GlobalPxCluster.SetPxClients(pxClients)
+		//etc.GlobalPxCluster.SetPxClients(pxClients)
 		//fmt.Println("--- Pre run end")
 
 	},
@@ -581,13 +581,13 @@ func createVMID(_type string, spec map[string]interface{}, node string) (int, bo
 	createVM := false
 
 	vmid := DetermineVmid(spec, _type)
-	fmt.Fprintf(os.Stderr, "STAGE 1: node=%v vmid=%v create=%v\n", node, vmid, createVM)
+	//fmt.Fprintf(os.Stderr, "STAGE 1: node=%v vmid=%v create=%v\n", node, vmid, createVM)
 	if vmid != 0 {
 		if !etc.GlobalPxCluster.Exists(node, int64(vmid)) {
 			createVM = true
 		}
 	}
-	fmt.Fprintf(os.Stderr, "STAGE 2: node=%v vmid=%v create=%v\n", node, vmid, createVM)
+	//fmt.Fprintf(os.Stderr, "STAGE 2: node=%v vmid=%v create=%v\n", node, vmid, createVM)
 	if vmid == 0 {
 		createVM = true
 		vmid64, err := generateClusterId(node)
@@ -598,7 +598,7 @@ func createVMID(_type string, spec map[string]interface{}, node string) (int, bo
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "STAGE 3: node=%v vmid=%v create=%v\n", node, vmid, createVM)
+	//fmt.Fprintf(os.Stderr, "STAGE 3: node=%v vmid=%v create=%v\n", node, vmid, createVM)
 	if vmid == 0 {
 		err := fmt.Errorf("could not create vmid")
 		return 0, false, err

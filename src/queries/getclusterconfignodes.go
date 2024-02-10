@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"px/configmap"
 	"px/etc"
-	"sort"
 
 	pxapiflat "github.com/DirkTheDaring/px-api-client-go"
 )
@@ -37,42 +35,17 @@ func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Conte
 		return nil
 	}
 	//resources := clusterResourcesResponse.GetData()
-	restResponse, err := ConvertJsonHttpResponseBodyToMap(r)
+	restResponse, _ := ConvertJsonHttpResponseBodyToMap(r)
 	//fmt.Fprintf(os.Stderr, "resp: %v\n", restResponse["data"])
 	//json := configmap.DataToJSON(restResponse)
 	//fmt.Fprintf(os.Stdout, "%s\n", json)
 	return restResponse
 }
 
-func GetClusterNodes(pxClients []etc.PxClient) []etc.PxClient {
-	list := []etc.PxClient{}
-	for _, pxClient := range pxClients {
-		nodeList := []string{}
-		result := GetClusterConfigNodes(pxClient.ApiClient, pxClient.Context)
-		nodes, err := configmap.GetInterfaceSliceValue(result, "data")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "err: %v\n", err)
-
-			pxClient.Nodes = nodeList
-			continue
-		}
-		if len(nodes) > 0 {
-			for _, item := range nodes {
-				nodeName := item["node"].(string)
-				nodeList = append(nodeList, nodeName)
-			}
-			sort.Strings(nodeList)
-			pxClient.Nodes = nodeList
-		}
-		list = append(list, pxClient)
-	}
-	return list
-}
-
-func DumpClusterNodes2(pxClients []etc.PxClient) {
+func DumpClusterNodes(pxClients []*etc.PxClient) {
 
 	for _, pxClient := range pxClients {
 		result := GetClusterConfigNodes(pxClient.ApiClient, pxClient.Context)
-		fmt.Fprintf(os.Stderr, "%s\n", result)
+		fmt.Fprintf(os.Stderr, "%v\n", result["data"])
 	}
 }

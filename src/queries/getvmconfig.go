@@ -12,6 +12,7 @@ func JSONGetVMConfig(node string, vmid int64) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	_, r, err := apiClient.NodesAPI.GetVMConfig(context, node, vmid).Execute()
 	if err != nil {
 		// HACK: This fixes it for proxmox 7
@@ -22,6 +23,10 @@ func JSONGetVMConfig(node string, vmid int64) (map[string]interface{}, error) {
 			restResponse, _ := ConvertJsonHttpResponseBodyToMap(r)
 
 			data, ok := configmap.GetMapEntry(restResponse, "data")
+
+			if !ok {
+				return nil, err
+			}
 
 			memory, ok := data["memory"]
 
@@ -44,6 +49,7 @@ func JSONGetVMConfig(node string, vmid int64) (map[string]interface{}, error) {
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 		return nil, err
 	}
+
 	restResponse, _ := ConvertJsonHttpResponseBodyToMap(r)
 	return restResponse, nil
 }

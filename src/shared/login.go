@@ -222,7 +222,9 @@ func InitPxCluster(clusterName string) *etc.PxCluster {
 	clustersDatabase := etc.NewClustersDatabase(&clusterConfigData)
 	clusterDatabase, _ := clustersDatabase.GetClusterDatabaseByName(clusterName)
 
+	NewPxJoinedCluster(clusterDatabase)
 	clusterNodes := clusterDatabase.GetNodes()
+
 	var simplePasswordManager authentication.PasswordManager = authentication.NewSimplePasswordManager(clusterNodes)
 
 	logins, err := AuthenticateClusterNodes(clusterDatabase, &simplePasswordManager)
@@ -245,15 +247,11 @@ func InitPxCluster(clusterName string) *etc.PxCluster {
 	pxCluster := etc.PxCluster{}
 	pxCluster.SetGlobalConfigData(&clusterConfigData)
 
-	var newPxClients []etc.PxClient
-	for _, client := range pxClients {
-		newPxClients = append(newPxClients, *client)
-	}
-	etc.InitCluster(&pxCluster, newPxClients)
+	etc.InitCluster(&pxCluster, pxClients)
 
 	return &pxCluster
 }
-func BuildMappingTable(pxClients []etc.PxClient) map[string]*api.Connection {
+func BuildMappingTable(pxClients []*etc.PxClient) map[string]*api.Connection {
 	nodeIndexMap := make(map[string]*api.Connection)
 
 	for index, client := range pxClients {

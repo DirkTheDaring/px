@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func buildMappingTable(pxClients []PxClient) (map[string]int, []string) {
+func buildMappingTable(pxClients []*PxClient) (map[string]int, []string) {
 	nodeIndexMap := make(map[string]int)
 	var nodeList []string
 
@@ -25,7 +25,7 @@ func buildMappingTable(pxClients []PxClient) (map[string]int, []string) {
 	return nodeIndexMap, nodeList
 }
 
-func buildMappingTableForMachines(pxClients []PxClient) (map[string]map[string]interface{}, []map[string]interface{}) {
+func buildMappingTableForMachines(pxClients []*PxClient) (map[string]map[string]interface{}, []map[string]interface{}) {
 	vmidMachineMap := make(map[string]map[string]interface{})
 	vmidMachineMapInternal := make(map[int]map[string]interface{})
 	var machineList []map[string]interface{}
@@ -60,22 +60,31 @@ func buildMappingTableForMachines(pxClients []PxClient) (map[string]map[string]i
 	return vmidMachineMap, machineList
 }
 
-func InitCluster(pxCluster *PxCluster, pxClients []PxClient) {
-	pxCluster.pxClients = pxClients
+func InitCluster(pxCluster *PxCluster, pxClients []*PxClient) {
 
-	nodeIndexMap, nodeList := buildMappingTable(pxCluster.pxClients)
+	/*
+		var oldPxClients []PxClient
+		for _, client := range pxClients {
+			oldPxClients = append(oldPxClients, *client)
+		}
+		pxCluster.pxClients = oldPxClients
+	*/
+
+	pxCluster.pxClients2 = pxClients
+
+	nodeIndexMap, nodeList := buildMappingTable(pxCluster.pxClients2)
 	pxCluster.pxClientLookup = nodeIndexMap
 
 	newMap := make(map[string]*PxClient)
 	for key, value := range nodeIndexMap {
-		newMap[key] = &pxClients[value]
+		newMap[key] = pxClients[value]
 	}
 	//pxCluster.api = api.NewSSimpleAPI(newMap)
 
 	sort.Strings(nodeList)
 	pxCluster.nodes = nodeList
 
-	vmidMachineMap, machines := buildMappingTableForMachines(pxCluster.pxClients)
+	vmidMachineMap, machines := buildMappingTableForMachines(pxCluster.pxClients2)
 	pxCluster.uniqueMachines = vmidMachineMap
 
 	//StringSortMachines(machines, []string{"name"}, []bool{true})

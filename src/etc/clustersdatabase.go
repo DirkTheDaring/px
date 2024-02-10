@@ -23,6 +23,7 @@ func (clustersDatabase *ClustersDatabase) getClusterIndex(clusters []map[string]
 		return -1, errors.New("no clusters defined")
 	}
 
+	// if the "name" is a number, handle this array index
 	number64, err := strconv.ParseInt(name, 10, 32)
 	if err == nil {
 		pos := int(number64)
@@ -33,6 +34,7 @@ func (clustersDatabase *ClustersDatabase) getClusterIndex(clusters []map[string]
 		}
 	}
 
+	// if it is not a number then treat it as string to look up
 	for i, cluster := range clusters {
 		clusterName, ok := cluster["name"]
 		// if cluster has no name
@@ -55,6 +57,7 @@ func (clustersDatabase *ClustersDatabase) getClusters() []map[string]interface{}
 	return clusters
 }
 
+/*
 func (clustersDatabase *ClustersDatabase) GetClusterDatabaseByName(clusterName string) (*ClusterDatabase, error) {
 	clusters := clustersDatabase.getClusters()
 	clusterIndex, err := clustersDatabase.getClusterIndex(clusters, clusterName)
@@ -68,3 +71,23 @@ func (clustersDatabase *ClustersDatabase) GetClusterDatabaseByName(clusterName s
 	return &cluster2, nil
 
 }
+*/
+
+// GetClusterDatabaseByName retrieves a ClusterDatabase instance by its name.
+func (db *ClustersDatabase) GetClusterDatabaseByName(name string) (*ClusterDatabase, error) {
+	clusters := db.getClusters()
+
+	index, err := db.getClusterIndex(clusters, name)
+	if err != nil {
+		return nil, fmt.Errorf("could not find cluster: %w", err)
+	}
+
+	cluster := clusters[index]
+	newClusterDB := &ClusterDatabase{table: &cluster}
+
+	return newClusterDB, nil
+}
+
+// Assuming findClusterIndexByName is a method that returns the index of the cluster by its name.
+// It's important to ensure that the method returns a meaningful error if the cluster is not found,
+// possibly leveraging fmt.Errorf to wrap the underlying error with more context.
