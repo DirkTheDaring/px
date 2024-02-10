@@ -91,7 +91,7 @@ func NewPxJoinedCluster(clusterDatabase *etc.ClusterDatabase) (*PxJoinedCluster,
 
 	for _, clusterNode := range clusterNodes {
 		result, _ := NewNodeConfig(clusterNode)
-		result.Dump()
+		//result.Dump()
 	}
 	/*
 
