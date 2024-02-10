@@ -89,10 +89,12 @@ func NewPxJoinedCluster(clusterDatabase *etc.ClusterDatabase) (*PxJoinedCluster,
 
 	clusterNodes := clusterDatabase.GetNodes()
 
+	/*
 	for _, clusterNode := range clusterNodes {
 		result, _ := NewNodeConfig(clusterNode)
-		//result.Dump()
+		result.Dump()
 	}
+	*/
 	/*
 
 		var simplePasswordManager authentication.PasswordManager = authentication.NewSimplePasswordManager(clusterNodes)
