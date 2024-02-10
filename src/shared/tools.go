@@ -333,7 +333,7 @@ func GetMachinesByName(pxCluster *etc.PxCluster, name string) []map[string]inter
 */
 
 func GetVmidByAttribute(machine map[string]interface{}, attribute string) (int, error) {
-	fmt.Fprintf(os.Stderr, "GetVmidByAttribute: attribute=%v\n", attribute)
+	//fmt.Fprintf(os.Stderr, "GetVmidByAttribute: attribute=%v\n", attribute)
 
 	machineNameStr, ok := configmap.GetString(machine, attribute)
 	if !ok {

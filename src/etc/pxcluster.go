@@ -57,7 +57,7 @@ func (pxCluster *PxCluster) GetPxClients() []*PxClient {
 func (pxCluster *PxCluster) GetStorage(types []string) []map[string]interface{} {
 
 	if !pxCluster.IsVirtualCluster() {
-		fmt.Printf("GetStorage() not virtual\n")
+		//fmt.Printf("GetStorage() not virtual\n")
 		pxClient := pxCluster.pxClients2[0]
 		return pxClient.GetStorage(types)
 	}
