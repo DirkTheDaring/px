@@ -85,16 +85,19 @@ type PxJoinedCluster struct {
 }
 
 func NewPxJoinedCluster(clusterDatabase *etc.ClusterDatabase) (*PxJoinedCluster, error) {
+	
 	PxJoinedCluster := PxJoinedCluster{}
+	/*
 
 	clusterNodes := clusterDatabase.GetNodes()
 
-	/*
+	
 	for _, clusterNode := range clusterNodes {
 		result, _ := NewNodeConfig(clusterNode)
 		result.Dump()
 	}
 	*/
+	
 	/*
 
 		var simplePasswordManager authentication.PasswordManager = authentication.NewSimplePasswordManager(clusterNodes)
