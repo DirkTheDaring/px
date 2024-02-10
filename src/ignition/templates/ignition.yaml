@@ -111,7 +111,7 @@ storage:
         dns={{ .self.nameserver }}
 {{else}}
 {{if .dns }}
-        dns={{ .dns[0] }}
+        dns={{ index .dns 0 }}
 {{end}}
 {{end}}
 {{end}}
