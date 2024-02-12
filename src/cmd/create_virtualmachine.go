@@ -634,6 +634,7 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	}
 
 	if err := createOrUpdateVM(spec, vmid, createVM, dryRun, node); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return err
 	}
 
@@ -644,6 +645,7 @@ func CreateVM(spec map[string]interface{}, vars map[string]interface{}, dump boo
 	if createIgnition {
 		DoIgnition(spec, cluster, node, createIgnition, vars, dump, dryRun, ignitionName)
 	}
+
 	return nil
 }
 
