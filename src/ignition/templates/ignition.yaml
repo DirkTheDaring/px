@@ -117,17 +117,15 @@ storage:
 {{end}}
 {{if .self.ipconfig0 }}
 {{if .self.ipconfig0.ip6 }}
-{{if .self.ipconfig0.gw6 }}
         [ipv6]
         method=manual
         addr-gen-mode=default
         #address1=fd00::ab:cd:ef:1/64,fe80::3ea6:2fff:fe76:bf6d
-        address1={{ .self.ipconfig0.ip6 }},{{ .self.ipconfig0.gw6 }}
+        address1={{ .self.ipconfig0.ip6 }}{{if .self.ipconfig0.gw6 }},{{ .self.ipconfig0.gw6 }}{{end}}
         #dns=fe80::3ea6:2fff:fe76:bf6d;
 {{if .self.ipconfig0.nameserver6 }}        dns={{ .self.ipconfig0.nameserver6 }}{{end}}
         #dns-search=fritz.box;office.kaupon.de;kaupon.de;
 {{if .self.ipconfig0.dns_search6 }}        dns-search={{ .self.ipconfig0.dns_search6 }}{{end}}
-{{end}}
 {{end}}
 {{end}}
 {{if .self.ipconfig1 }}
