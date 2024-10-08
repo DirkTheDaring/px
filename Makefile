@@ -1,5 +1,4 @@
 # Define variables
-# Include variables from separate files
 include config.mk
 GO := go
 MODULE := github.com/$(GITHUB_USERNAME)/$(REPO)
@@ -33,15 +32,18 @@ release:
 	cd $(SRC_DIR) && GOARCH=amd64 GOOS=darwin  $(GO) build -o ../$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64 .
 	cd $(SRC_DIR) && GOARCH=amd64 GOOS=windows $(GO) build -o ../$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64.exe .
 
-# Publish the release on GitHub
+# Publish the release on GitHub using the official gh CLI
 publish: release
-	github-release -vvv release  -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "Release $(VERSION)" && sleep 5
-	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_linux_amd64" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64
-	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_linux_arm64" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_arm64
-	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_darwin_amd64" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64
-	github-release upload -u $(GITHUB_USERNAME) -r $(REPO) -t v$(VERSION) -n "$(BINARY_NAME)_$(VERSION)_windows_amd64.exe" -f $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64.exe
+	@echo "Authenticating with GitHub..."
+	gh auth login --with-token < .token
+	gh release create v$(VERSION) $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64 \
+		$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_arm64 \
+		$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64 \
+		$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64.exe \
+		--title "Release $(VERSION)" \
+		--notes "Release version $(VERSION)"
 
-
+# Clean up build and release directories
 distclean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(RELEASE_DIR)
