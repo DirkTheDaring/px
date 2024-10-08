@@ -45,3 +45,6 @@ dir: local
         path /var/lib/vz
         content backup,vztmpl,iso,images
 
+# Token create
+Create a classic token which has repo,write:packages,and admin:org (or only admin:read_org)
+
