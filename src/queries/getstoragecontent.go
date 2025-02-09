@@ -85,7 +85,7 @@ func ConvertJsonHttpResponseBodyToMap(r *http.Response) (map[string]interface{},
 }
 
 func GetJsonStorageContent(pxClient *etc.PxClient, node, storage string) (map[string]interface{}, error) {
-	_, r, err := pxClient.ApiClient.NodesAPI.GetStorageContent(pxClient.Context, node, storage).Execute()
+	_, r, err := pxClient.ApiClient.NodesApi.GetStorageContent(pxClient.Context, node, storage).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("error calling GetStorageContent: %v", err)
 	}

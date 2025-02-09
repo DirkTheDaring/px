@@ -13,7 +13,7 @@ func JSONGetVMConfig(node string, vmid int64) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	_, r, err := apiClient.NodesAPI.GetVMConfig(context, node, vmid).Execute()
+	_, r, err := apiClient.NodesApi.GetVMConfig(context, node, vmid).Execute()
 	if err != nil {
 		// HACK: This fixes it for proxmox 7
 		if fmt.Sprintf("%v", err) == "json: cannot unmarshal number into Go struct field GetVMConfig200ResponseData.data.memory of type string" {

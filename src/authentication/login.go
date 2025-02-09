@@ -76,7 +76,7 @@ func LoginNode(login *LoginConfig, passwordManager *PasswordManager, timeout tim
 
 	// FIXME here you forgot domain!!!
 	createAccessTicketRequest := *pxapiflat.NewCreateAccessTicketRequest(password, login.username)
-	resp, _, err := apiClient.AccessAPI.CreateAccessTicket(ctx).CreateAccessTicketRequest(createAccessTicketRequest).Execute()
+	resp, _, err := apiClient.AccessApi.CreateAccessTicket(ctx).CreateAccessTicketRequest(createAccessTicketRequest).Execute()
 	if err != nil {
 		return fmt.Errorf("login request failed: %w", err)
 	}

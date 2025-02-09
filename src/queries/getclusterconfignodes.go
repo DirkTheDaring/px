@@ -10,7 +10,7 @@ import (
 )
 
 func GetClusterConfigNodes(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	_, r, err := apiClient.ClusterAPI.GetClusterConfigNodes(context).Execute()
+	_, r, err := apiClient.ClusterApi.GetClusterConfigNodes(context).Execute()
 	// {
 	//  "data": [
 	//    {

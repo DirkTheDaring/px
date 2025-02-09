@@ -118,7 +118,7 @@ import (
 */
 
 func GetClusterResources(apiClient *pxapiflat.APIClient, context context.Context) map[string]interface{} {
-	_, r, err := apiClient.ClusterAPI.GetClusterResources(context).Execute()
+	_, r, err := apiClient.ClusterApi.GetClusterResources(context).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `ClusterApi.GetClusterResources``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)

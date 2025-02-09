@@ -85,7 +85,7 @@ func GetStorage(apiClient *pxapiflat.APIClient, context context.Context) (map[st
 	//    }
 	//  ]
 	//}
-	_, r, err := apiClient.StorageAPI.GetStorage(context).Execute()
+	_, r, err := apiClient.StorageApi.GetStorage(context).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `StorageApi.GetStorage``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
