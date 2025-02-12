@@ -35,7 +35,7 @@ release:
 # Publish the release on GitHub using the official gh CLI
 publish: release
 	@echo "Authenticating with GitHub..."
-	gh auth login --with-token < .token
+	#gh auth login --with-token < .token
 	gh release create v$(VERSION) $(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64 \
 		$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_linux_arm64 \
 		$(RELEASE_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64 \

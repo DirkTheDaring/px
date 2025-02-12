@@ -54,6 +54,10 @@ github.com/DirkTheDaring/px-api-client-go v1.0.12 h1:mJrmnjh0jTLVG434shnfRS9miI5
 github.com/DirkTheDaring/px-api-client-go v1.0.12/go.mod h1:ooU42A6dDKqjPmQFFIQBpa/dWu/iZrQiw/9g7lo7vBI=
 github.com/DirkTheDaring/px-api-client-go v1.0.13 h1:i0n/RuDBV27/l6zJSEREtKp+PmMbzh9ksnOPP+SHlq8=
 github.com/DirkTheDaring/px-api-client-go v1.0.13/go.mod h1:2N/fIu4FB3YkOcjDlBiCRoReFJMMDc5ZLGWVn5T4qtc=
+github.com/DirkTheDaring/px-api-client-go v1.0.14 h1:4OXqyvuw0kNBzXwgk8ErbZ7qhC0NLxTySs1XLbBemcU=
+github.com/DirkTheDaring/px-api-client-go v1.0.14/go.mod h1:2N/fIu4FB3YkOcjDlBiCRoReFJMMDc5ZLGWVn5T4qtc=
+github.com/DirkTheDaring/px-api-client-go v1.0.15 h1:4D989UhRueyWgdWWQUA2y9caOi2O0kxPGpW61zhfBOA=
+github.com/DirkTheDaring/px-api-client-go v1.0.15/go.mod h1:2N/fIu4FB3YkOcjDlBiCRoReFJMMDc5ZLGWVn5T4qtc=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.4 h1:R923i3PsRVlPY64TBHKjx8UZg4rMwyn+CiSm1HXJTJs=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.4/go.mod h1:pBrlV23uYis/ucCLQ/JUrwyDdnv6kx6FM4E4cWyCiNE=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.5 h1:Lm9m1MmgQBv+hM4dEdEeVRMVT/SP1xVfW0bSZ8/xSCs=
@@ -84,6 +88,12 @@ github.com/DirkTheDaring/px-api-client-internal-go v1.0.17 h1:F5AAmwoo0QHIQiSIN5
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.17/go.mod h1:pBrlV23uYis/ucCLQ/JUrwyDdnv6kx6FM4E4cWyCiNE=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.18 h1:AoT+J/MYNFDTpkGxXfZNyOupdhqc9k2SA3Iw+yei1qw=
 github.com/DirkTheDaring/px-api-client-internal-go v1.0.18/go.mod h1:bugQ907Vnd5ACOgYRspjP+l/9CCRZbhMQ3x/5SlrUQg=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.19 h1:uHVaBpTV0XO/MQirWlvjs5FcvQAgZQSjmvbg5Vi9jxw=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.19/go.mod h1:bugQ907Vnd5ACOgYRspjP+l/9CCRZbhMQ3x/5SlrUQg=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.20 h1:XjHQwml1KeyfPUFXDLhPL+pux013SsMejmERDfb1BzQ=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.20/go.mod h1:bugQ907Vnd5ACOgYRspjP+l/9CCRZbhMQ3x/5SlrUQg=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.21 h1:4QszJN2DaNtrzYt50ifxp1yp3g+iXrKTP8UMU2kpIQQ=
+github.com/DirkTheDaring/px-api-client-internal-go v1.0.21/go.mod h1:bugQ907Vnd5ACOgYRspjP+l/9CCRZbhMQ3x/5SlrUQg=
 github.com/alecthomas/kong v0.6.1 h1:1kNhcFepkR+HmasQpbiKDLylIL8yh5B5y1zPp5bJimA=
 github.com/alecthomas/kong v0.6.1/go.mod h1:JfHWDzLmbh/puW6I3V7uWenoh56YNVONW+w8eKeUr9I=
 github.com/alecthomas/repr v0.0.0-20210801044451-80ca428c5142 h1:8Uy0oSf5co/NZXje7U1z8Mpep++QJOldL2hs/sBQf48=
@@ -330,6 +340,8 @@ golang.org/x/exp v0.0.0-20231226003508-02704c960a9b h1:kLiC65FbiHWFAOu+lxwNPujcs
 golang.org/x/exp v0.0.0-20231226003508-02704c960a9b/go.mod h1:iRJReGqOEeBhDZGkGbynYwcHlctCvnjTYIamk7uXpHI=
 golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3 h1:qNgPs5exUA+G0C96DrPwNrvLSj7GT/9D+3WMWUcUg34=
 golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3/go.mod h1:tujkw807nyEEAamNbDrEGzRav+ilXA7PCRAd6xsmwiU=
+golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac h1:l5+whBCLH3iH2ZNHYLbAe58bo7yrN4mVcnkHDYz5vvs=
+golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac/go.mod h1:hH+7mtFmImwwcMvScyxUhjuVHR3HGaDPMn9rMSUUbxo=
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=

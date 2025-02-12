@@ -5,8 +5,8 @@ go 1.22.0
 toolchain go1.23.6
 
 require (
-	github.com/DirkTheDaring/px-api-client-go v1.0.13
-	github.com/DirkTheDaring/px-api-client-internal-go v1.0.18
+	github.com/DirkTheDaring/px-api-client-go v1.0.15
+	github.com/DirkTheDaring/px-api-client-internal-go v1.0.21
 	github.com/alecthomas/kong v0.6.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -31,7 +31,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3 // indirect
+	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
